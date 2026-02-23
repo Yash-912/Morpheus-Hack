@@ -3,12 +3,20 @@
 // ============================================================
 
 const jwt = require('jsonwebtoken');
-const prisma = require('../config/database');
+const { prisma } = require('../config/database');
 const logger = require('../utils/logger.utils');
+
+const PRIVATE_KEY = process.env.JWT_ACCESS_PRIVATE_KEY
+  ? process.env.JWT_ACCESS_PRIVATE_KEY.replace(/\\n/g, '\n')
+  : process.env.JWT_SECRET || 'dev-secret';
 
 const PUBLIC_KEY = process.env.JWT_ACCESS_PUBLIC_KEY
   ? process.env.JWT_ACCESS_PUBLIC_KEY.replace(/\\n/g, '\n')
   : null;
+
+const isAsymmetric = PUBLIC_KEY && PUBLIC_KEY !== PRIVATE_KEY && PRIVATE_KEY.includes('-----BEGIN');
+const VERIFY_KEY = isAsymmetric ? PUBLIC_KEY : (process.env.JWT_ACCESS_PRIVATE_KEY || process.env.JWT_SECRET || 'dev-secret');
+const JWT_ALGOS = isAsymmetric ? ['RS256'] : ['HS256'];
 
 /**
  * Verifies Bearer token, loads user from DB, attaches req.user.
@@ -30,7 +38,7 @@ async function authMiddleware(req, res, next) {
     // Verify JWT
     let decoded;
     try {
-      decoded = jwt.verify(token, PUBLIC_KEY, { algorithms: ['RS256'] });
+      decoded = jwt.verify(token, VERIFY_KEY, { algorithms: JWT_ALGOS });
     } catch (err) {
       const message =
         err.name === 'TokenExpiredError' ? 'Access token expired' : 'Invalid access token';
@@ -50,9 +58,8 @@ async function authMiddleware(req, res, next) {
         city: true,
         kycStatus: true,
         isActive: true,
-        preferredLanguage: true,
+        languagePref: true,
         gigScore: true,
-        role: true,
       },
     });
 

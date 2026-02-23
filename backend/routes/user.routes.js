@@ -20,9 +20,8 @@ router.patch(
   [
     body('name').optional().isLength({ min: 2, max: 100 }).withMessage('Name must be 2-100 characters'),
     body('email').optional().isEmail().withMessage('Must be a valid email'),
-    body('primaryCity').optional().isString(),
-    body('preferredLanguage').optional().isIn(['en', 'hi', 'kn', 'ta', 'te', 'mr']),
-    body('upiId').optional().isString(),
+    body('city').optional().isString(),
+    body('languagePref').optional().isIn(['en', 'hi', 'kn', 'ta', 'te', 'mr']),
   ],
   validate,
   userController.updateProfile

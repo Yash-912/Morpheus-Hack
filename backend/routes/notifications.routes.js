@@ -4,8 +4,8 @@
 
 const { Router } = require('express');
 const { body, query } = require('express-validator');
-const { validate } = require('../middleware/validate.middleware');
-const { authMiddleware } = require('../middleware/auth.middleware');
+const validate = require('../middleware/validate.middleware');
+const authMiddleware = require('../middleware/auth.middleware');
 const notificationsController = require('../controllers/notifications.controller');
 
 const router = Router();

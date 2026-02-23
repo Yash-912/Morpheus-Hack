@@ -4,8 +4,8 @@
 
 const { Router } = require('express');
 const { body, param } = require('express-validator');
-const { validate } = require('../middleware/validate.middleware');
-const { authMiddleware } = require('../middleware/auth.middleware');
+const validate = require('../middleware/validate.middleware');
+const authMiddleware = require('../middleware/auth.middleware');
 const savingsController = require('../controllers/savings.controller');
 
 const router = Router();

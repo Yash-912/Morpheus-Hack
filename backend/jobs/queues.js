@@ -1,131 +1,88 @@
 // ============================================================
 // Bull Queue Definitions — all async job queues
+// Falls back to no-op stubs when Redis is unavailable (dev)
 // ============================================================
 
-const Bull = require('bull');
-const { redisClient } = require('../config/redis');
 const logger = require('../utils/logger.utils');
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
+const REDIS_URL = process.env.REDIS_URL || '';
+const USE_REDIS = REDIS_URL && !REDIS_URL.includes('mock') && REDIS_URL.startsWith('redis');
 
-// Shared Bull options — reuse existing Redis connections where possible
-const defaultOpts = {
-  redis: REDIS_URL,
-  defaultJobOptions: {
-    removeOnComplete: 100,   // keep last 100 completed for inspection
-    removeOnFail: 200,       // keep last 200 failed for debugging
-  },
-};
+// ---- No-op queue stub for dev without Redis ----
+class StubQueue {
+  constructor(name) { this.name = name; }
+  async add(data, opts) { logger.debug(`[StubQueue:${this.name}] job enqueued (no-op)`); return { id: 'stub-' + Date.now() }; }
+  process() {}
+  on() { return this; }
+  async close() {}
+}
 
-// ---- Queue Instances ----
+let payoutQueue, settlementQueue, notificationQueue, smsProcessingQueue, zoneComputeQueue, loanRepaymentQueue;
 
-/**
- * Payout disbursement queue.
- * Job data: { payoutId, userId, amount, upiId, fundAccountId }
- */
-const payoutQueue = new Bull('payout-disbursement', {
-  ...defaultOpts,
-  defaultJobOptions: {
-    ...defaultOpts.defaultJobOptions,
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 5000 },
-  },
-});
+if (USE_REDIS) {
+  const Bull = require('bull');
 
-/**
- * Platform settlement reconciliation queue.
- * Job data: { payoutId } (or batch)
- */
-const settlementQueue = new Bull('settlement-reconciliation', {
-  ...defaultOpts,
-  defaultJobOptions: {
-    ...defaultOpts.defaultJobOptions,
-    attempts: 2,
-    backoff: { type: 'fixed', delay: 30000 },
-  },
-});
+  const defaultOpts = {
+    redis: REDIS_URL,
+    defaultJobOptions: {
+      removeOnComplete: 100,
+      removeOnFail: 200,
+    },
+  };
 
-/**
- * Multi-channel notification dispatch queue.
- * Job data: { userId, notification: { type, title, body, data }, channels }
- */
-const notificationQueue = new Bull('notification-dispatch', {
-  ...defaultOpts,
-  defaultJobOptions: {
-    ...defaultOpts.defaultJobOptions,
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 2000 },
-  },
-});
-
-/**
- * SMS expense extraction queue.
- * Job data: { userId, messages: [{ body, timestamp }] }
- */
-const smsProcessingQueue = new Bull('sms-expense-processing', {
-  ...defaultOpts,
-  defaultJobOptions: {
-    ...defaultOpts.defaultJobOptions,
-    attempts: 2,
-    backoff: { type: 'fixed', delay: 10000 },
-  },
-});
-
-/**
- * Hot zone ML computation queue.
- * Job data: { city }
- */
-const zoneComputeQueue = new Bull('zone-compute', {
-  ...defaultOpts,
-  defaultJobOptions: {
-    ...defaultOpts.defaultJobOptions,
-    attempts: 1,    // stale zones are fine, no retries
-    timeout: 30000, // 30s max per city
-  },
-});
-
-/**
- * Loan auto-repayment queue.
- * Job data: { userId, payoutId, payoutAmount }
- */
-const loanRepaymentQueue = new Bull('loan-auto-repayment', {
-  ...defaultOpts,
-  defaultJobOptions: {
-    ...defaultOpts.defaultJobOptions,
-    attempts: 3,
-    backoff: { type: 'exponential', delay: 3000 },
-  },
-});
-
-// ---- Global event listeners (shared across all queues) ----
-const queues = [
-  payoutQueue,
-  settlementQueue,
-  notificationQueue,
-  smsProcessingQueue,
-  zoneComputeQueue,
-  loanRepaymentQueue,
-];
-
-queues.forEach((q) => {
-  q.on('error', (err) => {
-    logger.error(`Queue [${q.name}] error:`, err.message);
+  payoutQueue = new Bull('payout-disbursement', {
+    ...defaultOpts,
+    defaultJobOptions: { ...defaultOpts.defaultJobOptions, attempts: 3, backoff: { type: 'exponential', delay: 5000 } },
   });
 
-  q.on('failed', (job, err) => {
-    logger.warn(`Queue [${q.name}] job #${job.id} failed (attempt ${job.attemptsMade}):`, err.message);
+  settlementQueue = new Bull('settlement-reconciliation', {
+    ...defaultOpts,
+    defaultJobOptions: { ...defaultOpts.defaultJobOptions, attempts: 2, backoff: { type: 'fixed', delay: 30000 } },
   });
 
-  q.on('stalled', (jobId) => {
-    logger.warn(`Queue [${q.name}] job #${jobId} stalled`);
+  notificationQueue = new Bull('notification-dispatch', {
+    ...defaultOpts,
+    defaultJobOptions: { ...defaultOpts.defaultJobOptions, attempts: 3, backoff: { type: 'exponential', delay: 2000 } },
   });
-});
+
+  smsProcessingQueue = new Bull('sms-expense-processing', {
+    ...defaultOpts,
+    defaultJobOptions: { ...defaultOpts.defaultJobOptions, attempts: 2, backoff: { type: 'fixed', delay: 10000 } },
+  });
+
+  zoneComputeQueue = new Bull('zone-compute', {
+    ...defaultOpts,
+    defaultJobOptions: { ...defaultOpts.defaultJobOptions, attempts: 1, timeout: 30000 },
+  });
+
+  loanRepaymentQueue = new Bull('loan-auto-repayment', {
+    ...defaultOpts,
+    defaultJobOptions: { ...defaultOpts.defaultJobOptions, attempts: 3, backoff: { type: 'exponential', delay: 3000 } },
+  });
+
+  // Global event listeners
+  const queues = [payoutQueue, settlementQueue, notificationQueue, smsProcessingQueue, zoneComputeQueue, loanRepaymentQueue];
+  queues.forEach((q) => {
+    q.on('error', (err) => logger.error(`Queue [${q.name}] error:`, err.message));
+    q.on('failed', (job, err) => logger.warn(`Queue [${q.name}] job #${job.id} failed (attempt ${job.attemptsMade}):`, err.message));
+    q.on('stalled', (jobId) => logger.warn(`Queue [${q.name}] job #${jobId} stalled`));
+  });
+} else {
+  payoutQueue = new StubQueue('payout-disbursement');
+  settlementQueue = new StubQueue('settlement-reconciliation');
+  notificationQueue = new StubQueue('notification-dispatch');
+  smsProcessingQueue = new StubQueue('sms-expense-processing');
+  zoneComputeQueue = new StubQueue('zone-compute');
+  loanRepaymentQueue = new StubQueue('loan-auto-repayment');
+  logger.info('Bull queues using no-op stubs (set REDIS_URL for real queues)');
+}
 
 /**
  * Gracefully close all queues.
  */
 async function closeAllQueues() {
-  await Promise.all(queues.map((q) => q.close()));
+  const allQueues = [payoutQueue, settlementQueue, notificationQueue, smsProcessingQueue, zoneComputeQueue, loanRepaymentQueue];
+  await Promise.all(allQueues.map((q) => q.close()));
   logger.info('All Bull queues closed');
 }
 

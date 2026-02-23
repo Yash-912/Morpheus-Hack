@@ -23,14 +23,18 @@ const PUBLIC_KEY = process.env.JWT_ACCESS_PUBLIC_KEY
   ? process.env.JWT_ACCESS_PUBLIC_KEY.replace(/\\n/g, '\n')
   : null;
 
-const JWT_ALG = PUBLIC_KEY ? 'RS256' : 'HS256';
+// Use RS256 only when keys look like real RSA/EC PEM keys
+const isAsymmetric = PUBLIC_KEY && PUBLIC_KEY !== PRIVATE_KEY && PRIVATE_KEY.includes('-----BEGIN');
+const JWT_ALG = isAsymmetric ? 'RS256' : 'HS256';
+const SIGN_KEY = isAsymmetric ? PRIVATE_KEY : (process.env.JWT_ACCESS_PRIVATE_KEY || process.env.JWT_SECRET || 'dev-secret');
+const VERIFY_KEY = isAsymmetric ? PUBLIC_KEY : SIGN_KEY;
 
 function signAccessToken(payload) {
-  return jwt.sign(payload, PRIVATE_KEY, { algorithm: JWT_ALG, expiresIn: JWT_ACCESS_EXPIRES });
+  return jwt.sign(payload, SIGN_KEY, { algorithm: JWT_ALG, expiresIn: JWT_ACCESS_EXPIRES });
 }
 
 function signRefreshToken(payload) {
-  return jwt.sign(payload, PRIVATE_KEY, { algorithm: JWT_ALG, expiresIn: JWT_REFRESH_EXPIRES });
+  return jwt.sign(payload, SIGN_KEY, { algorithm: JWT_ALG, expiresIn: JWT_REFRESH_EXPIRES });
 }
 
 const authController = {

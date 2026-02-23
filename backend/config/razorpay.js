@@ -1,23 +1,33 @@
 // ============================================================
 // Razorpay SDK Client
+// Lazy-initialized: only created when first accessed
 // ============================================================
 
-const Razorpay = require('razorpay');
+let _razorpayClient = null;
+let _initialized = false;
 
-let razorpayClient = null;
+function _init() {
+  if (_initialized) return;
+  _initialized = true;
 
-try {
-  if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
-    razorpayClient = new Razorpay({
+  if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET ||
+      process.env.RAZORPAY_KEY_ID.startsWith('rzp_test_mock')) {
+    // Skip in dev / mock mode
+    return;
+  }
+
+  try {
+    const Razorpay = require('razorpay');
+    _razorpayClient = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID,
       key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
     console.log('✅ Razorpay client initialized');
-  } else {
-    console.warn('⚠️  Razorpay credentials not set — payouts disabled');
+  } catch (error) {
+    console.error('❌ Razorpay init failed:', error.message);
   }
-} catch (error) {
-  console.error('❌ Razorpay init failed:', error.message);
 }
 
-module.exports = { razorpayClient };
+module.exports = {
+  get razorpayClient() { _init(); return _razorpayClient; },
+};

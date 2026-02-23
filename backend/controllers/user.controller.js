@@ -6,7 +6,7 @@ const { prisma } = require('../config/database');
 const logger = require('../utils/logger.utils');
 
 const ALLOWED_PROFILE_FIELDS = [
-  'name', 'email', 'primaryCity', 'preferredLanguage', 'upiId',
+  'name', 'email', 'city', 'languagePref',
 ];
 
 const userController = {
@@ -22,19 +22,18 @@ const userController = {
           phone: true,
           name: true,
           email: true,
-          primaryCity: true,
-          preferredLanguage: true,
+          city: true,
+          languagePref: true,
           kycStatus: true,
           gigScore: true,
           walletBalance: true,
-          upiId: true,
           isActive: true,
           createdAt: true,
           platformAccounts: {
             select: { platform: true, isActive: true },
           },
           bankAccounts: {
-            select: { id: true, bankName: true, accountNumberMasked: true, isPrimary: true },
+            select: { id: true, bankName: true, accountNumber: true, isPrimary: true },
           },
         },
       });
@@ -86,10 +85,9 @@ const userController = {
           phone: true,
           name: true,
           email: true,
-          primaryCity: true,
-          preferredLanguage: true,
+          city: true,
+          languagePref: true,
           kycStatus: true,
-          upiId: true,
         },
       });
 

@@ -56,6 +56,8 @@ async function disconnect() {
   console.log('🔌 PostgreSQL disconnected');
 }
 
-module.exports = prisma;
-module.exports.connectDatabase = connectDatabase;
-module.exports.disconnect = disconnect;
+module.exports = {
+  prisma,
+  connectDatabase,
+  disconnect,
+};

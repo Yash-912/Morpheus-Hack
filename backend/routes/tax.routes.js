@@ -4,9 +4,9 @@
 
 const { Router } = require('express');
 const { param, body, query } = require('express-validator');
-const { validate } = require('../middleware/validate.middleware');
-const { authMiddleware } = require('../middleware/auth.middleware');
-const { kycMiddleware } = require('../middleware/kyc.middleware');
+const validate = require('../middleware/validate.middleware');
+const authMiddleware = require('../middleware/auth.middleware');
+const kycMiddleware = require('../middleware/kyc.middleware');
 const taxController = require('../controllers/tax.controller');
 
 const router = Router();
