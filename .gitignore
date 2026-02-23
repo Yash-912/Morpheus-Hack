@@ -1,0 +1,77 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.pyo
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.*.local
+
+# Logs
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Data & Models (large files)
+data/training/
+data/saved_models/
+*.keras
+*.h5
+*.joblib
+*.pkl
+*.pt
+*.pth
+
+# Uploads
+uploads/
+
+# SSL certificates
+nginx/ssl/*.pem
+nginx/ssl/*.key
+nginx/ssl/*.crt
+
+# Docker volumes
+mongo-data/
+redis-data/
+
+# Coverage & Testing
+coverage/
+.nyc_output/
+*.lcov
+htmlcov/
+
+# Misc
+*.bak
+*.tmp
+*.temp
+.cache/

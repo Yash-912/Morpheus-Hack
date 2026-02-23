@@ -1,0 +1,194 @@
+// ============================================================
+// Insights Controller — algo insights, upvote, report, performance
+// ============================================================
+
+const { prisma } = require('../config/database');
+const logger = require('../utils/logger.utils');
+const MlService = require('../services/ml.service');
+
+const insightsController = {
+  /**
+   * GET /api/insights/algo
+   * Return algo insights filtered by platform/city/type.
+   */
+  async algoInsights(req, res, next) {
+    try {
+      const where = { active: true };
+      if (req.query.platform) where.platform = req.query.platform;
+      if (req.query.city) where.city = req.query.city;
+      if (req.query.type) where.type = req.query.type;
+
+      const insights = await prisma.algoInsight.findMany({
+        where,
+        orderBy: [{ upvotes: 'desc' }, { createdAt: 'desc' }],
+        take: 50,
+      });
+
+      res.json({ success: true, data: insights });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * POST /api/insights/algo/:id/upvote
+   */
+  async upvote(req, res, next) {
+    try {
+      const insightId = req.params.id;
+
+      const insight = await prisma.algoInsight.findUnique({ where: { id: insightId } });
+      if (!insight) {
+        return res.status(404).json({
+          success: false,
+          error: { code: 'NOT_FOUND', message: 'Insight not found' },
+        });
+      }
+
+      // Check if already upvoted
+      const existing = await prisma.insightVote.findFirst({
+        where: { insightId, userId: req.user.id },
+      });
+
+      if (existing) {
+        // Toggle: remove upvote
+        await prisma.$transaction([
+          prisma.insightVote.delete({ where: { id: existing.id } }),
+          prisma.algoInsight.update({
+            where: { id: insightId },
+            data: { upvotes: { decrement: 1 } },
+          }),
+        ]);
+
+        return res.json({ success: true, data: { upvoted: false } });
+      }
+
+      // Add upvote
+      await prisma.$transaction([
+        prisma.insightVote.create({
+          data: { insightId, userId: req.user.id },
+        }),
+        prisma.algoInsight.update({
+          where: { id: insightId },
+          data: { upvotes: { increment: 1 } },
+        }),
+      ]);
+
+      res.json({ success: true, data: { upvoted: true } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * POST /api/insights/algo/report
+   * Report new pattern observation.
+   */
+  async report(req, res, next) {
+    try {
+      const { platform, city, pattern, type } = req.body;
+
+      const insight = await prisma.algoInsight.create({
+        data: {
+          platform,
+          city,
+          pattern,
+          type: type || 'user_reported',
+          reportedBy: req.user.id,
+          upvotes: 0,
+          active: true,
+        },
+      });
+
+      logger.info('Algo insight reported', {
+        insightId: insight.id,
+        userId: req.user.id,
+        platform,
+        city,
+      });
+
+      res.status(201).json({ success: true, data: insight });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
+   * GET /api/insights/performance
+   * Personal analytics vs city average.
+   */
+  async performance(req, res, next) {
+    try {
+      const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+      const city = user.primaryCity || 'bangalore';
+
+      // Last 30 days analytics
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      // User stats
+      const userStats = await prisma.earning.aggregate({
+        where: { userId: req.user.id, date: { gte: thirtyDaysAgo } },
+        _sum: { amount: true },
+        _avg: { amount: true },
+        _count: true,
+      });
+
+      // Days the user worked
+      const userWorkDays = await prisma.earning.groupBy({
+        by: ['date'],
+        where: { userId: req.user.id, date: { gte: thirtyDaysAgo } },
+      });
+
+      // City average — all users in the same city
+      const cityStats = await prisma.earning.aggregate({
+        where: {
+          user: { primaryCity: city },
+          date: { gte: thirtyDaysAgo },
+        },
+        _avg: { amount: true },
+      });
+
+      // Count active users in city
+      const cityUsers = await prisma.earning.groupBy({
+        by: ['userId'],
+        where: {
+          user: { primaryCity: city },
+          date: { gte: thirtyDaysAgo },
+        },
+      });
+
+      const userAvg = Number(userStats._avg.amount || 0);
+      const cityAvg = Number(cityStats._avg.amount || 0);
+      const comparison = cityAvg > 0
+        ? Math.round(((userAvg - cityAvg) / cityAvg) * 100)
+        : 0;
+
+      res.json({
+        success: true,
+        data: {
+          period: '30d',
+          city,
+          user: {
+            totalEarnings: Number(userStats._sum.amount || 0),
+            avgPerEntry: userAvg,
+            totalEntries: userStats._count,
+            workDays: userWorkDays.length,
+          },
+          cityAverage: {
+            avgPerEntry: cityAvg,
+            activeWorkers: cityUsers.length,
+          },
+          comparison: {
+            percentVsCity: comparison,
+            label: comparison >= 0 ? 'above average' : 'below average',
+          },
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+};
+
+module.exports = insightsController;

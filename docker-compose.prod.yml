@@ -1,0 +1,90 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # Nginx — Reverse Proxy, SSL Termination, Static Serving
+  # ============================================================
+  nginx:
+    image: nginx:alpine
+    container_name: gigpay-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/letsencrypt:ro
+      - ./frontend/dist:/var/www/gigpay-pwa:ro
+    depends_on:
+      - backend
+      - whatsapp-bot
+    networks:
+      - gigpay-network
+    restart: always
+
+  # ============================================================
+  # Backend API — Node.js/Express (2 replicas)
+  # ============================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.5'
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=production
+      - ML_SERVICE_URL=http://ml-service:8000
+    networks:
+      - gigpay-network
+    restart: always
+    # Note: DATABASE_URL and REDIS_URL use managed cloud services (PostgreSQL RDS/Supabase + Redis Cloud)
+    # Set in backend/.env — NOT overridden here
+
+  # ============================================================
+  # ML Service — Python FastAPI
+  # ============================================================
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 1G
+          cpus: '1.0'
+    env_file:
+      - ./ml-service/.env
+    networks:
+      - gigpay-network
+    restart: always
+
+  # ============================================================
+  # WhatsApp Bot — Node.js/Express
+  # ============================================================
+  whatsapp-bot:
+    build:
+      context: ./whatsapp-bot
+      dockerfile: Dockerfile
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.25'
+    env_file:
+      - ./whatsapp-bot/.env
+    environment:
+      - GIGPAY_API_URL=http://backend:5000
+    networks:
+      - gigpay-network
+    restart: always
+
+networks:
+  gigpay-network:
+    driver: bridge

@@ -1,0 +1,141 @@
+version: '3.8'
+
+services:
+  # ============================================================
+  # PostgreSQL — Primary Database (ACID-compliant for financial data)
+  # ============================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: gigpay-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: gigpay
+      POSTGRES_USER: gigpay
+      POSTGRES_PASSWORD: gigpay_dev_password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - gigpay-network
+    restart: unless-stopped
+
+  # ============================================================
+  # Redis — Cache, Queue, Sessions
+  # ============================================================
+  redis:
+    image: redis:7-alpine
+    container_name: gigpay-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - gigpay-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # ============================================================
+  # Backend API — Node.js/Express (Port 5000)
+  # ============================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: gigpay-backend
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./backend/.env
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://gigpay:gigpay_dev_password@postgres:5432/gigpay
+      - REDIS_URL=redis://redis:6379
+      - ML_SERVICE_URL=http://ml-service:8000
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - gigpay-network
+    restart: unless-stopped
+
+  # ============================================================
+  # ML Service — Python FastAPI (Port 8000)
+  # ============================================================
+  ml-service:
+    build:
+      context: ./ml-service
+      dockerfile: Dockerfile
+    container_name: gigpay-ml-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./ml-service/.env
+    environment:
+      - DATABASE_URL=postgresql://gigpay:gigpay_dev_password@postgres:5432/gigpay
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./ml-service:/app
+      - /app/__pycache__
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - gigpay-network
+    restart: unless-stopped
+
+  # ============================================================
+  # WhatsApp Bot — Node.js/Express (Port 5001)
+  # ============================================================
+  whatsapp-bot:
+    build:
+      context: ./whatsapp-bot
+      dockerfile: Dockerfile
+    container_name: gigpay-whatsapp-bot
+    ports:
+      - "5001:5001"
+    env_file:
+      - ./whatsapp-bot/.env
+    environment:
+      - GIGPAY_API_URL=http://backend:5000
+      - REDIS_URL=redis://redis:6379
+    volumes:
+      - ./whatsapp-bot:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - gigpay-network
+    restart: unless-stopped
+
+  # ============================================================
+  # Frontend PWA — React/Vite (Port 3000)
+  # ============================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: gigpay-frontend
+    ports:
+      - "3000:3000"
+    env_file:
+      - ./frontend/.env
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - gigpay-network
+    restart: unless-stopped
+
+networks:
+  gigpay-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
