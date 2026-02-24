@@ -57,12 +57,6 @@ router.post('/logout', authMiddleware, authController.logout);
 router.post(
   '/kyc/aadhaar/init',
   authMiddleware,
-  [
-    body('aadhaarNumber')
-      .notEmpty().withMessage('Aadhaar number is required')
-      .matches(/^\d{12}$/).withMessage('Aadhaar must be 12 digits'),
-  ],
-  validate,
   authController.initAadhaarKyc
 );
 
@@ -71,9 +65,7 @@ router.post(
   '/kyc/aadhaar/verify',
   authMiddleware,
   [
-    body('aadhaarNumber').notEmpty().withMessage('Aadhaar number is required'),
-    body('otp').notEmpty().withMessage('OTP is required'),
-    body('txnId').notEmpty().withMessage('Transaction ID is required'),
+    body('requestId').notEmpty().withMessage('DigiLocker Request ID is required'),
   ],
   validate,
   authController.verifyAadhaarKyc

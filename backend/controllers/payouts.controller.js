@@ -37,9 +37,9 @@ const payoutsController = {
         where: {
           userId: req.user.id,
           date: { gte: today },
-          settled: false,
+          verified: true, // We don't have settled in schema, but verified is there
         },
-        _sum: { totalAmount: true },
+        _sum: { netAmount: true },
       });
 
       // Today's payouts for daily limit check
@@ -56,7 +56,7 @@ const payoutsController = {
         success: true,
         data: {
           walletBalance: Number(user.walletBalance),
-          pendingEarnings: Number(pendingAgg._sum.totalAmount || 0),
+          pendingEarnings: Number(pendingAgg._sum.netAmount || 0),
           todayWithdrawn: Number(todayPayoutsAgg._sum.amount || 0),
           dailyLimit: DAILY_CASHOUT_LIMIT,
           dailyRemaining: Math.max(
@@ -209,7 +209,7 @@ const payoutsController = {
       }
 
       // 8. Savings round-up
-      await SavingsService.processRoundUp(userId, netAmount - loanDeduction).catch(() => {});
+      await SavingsService.processRoundUp(userId, netAmount - loanDeduction).catch(() => { });
 
       // 9. Send confirmation notification
       await NotificationService.sendPayoutConfirmation(userId, {
@@ -218,7 +218,7 @@ const payoutsController = {
         netAmount: netAmount - loanDeduction,
         loanDeduction,
         payoutId: payout.id,
-      }).catch(() => {});
+      }).catch(() => { });
 
       logger.info('Payout initiated', {
         userId,

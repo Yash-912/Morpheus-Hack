@@ -171,13 +171,12 @@ const authController = {
 
   /**
    * POST /api/auth/kyc/aadhaar/init
-   * Request UIDAI OTP for Aadhaar verification.
+   * Create a Setu DigiLocker session for KYC.
    */
   async initAadhaarKyc(req, res, next) {
     try {
-      const { aadhaarNumber } = req.body;
-      const result = await AadhaarService.requestOtp(aadhaarNumber);
-      res.json({ success: true, data: { txnId: result.txnId } });
+      const result = await AadhaarService.createDigiLockerSession();
+      res.json({ success: true, data: result }); // Returns { id, url }
     } catch (error) {
       next(error);
     }
@@ -185,31 +184,29 @@ const authController = {
 
   /**
    * POST /api/auth/kyc/aadhaar/verify
-   * Verify UIDAI OTP, extract KYC data, update user.
+   * Verify DigiLocker request, extract Aadhaar data, update user.
    */
   async verifyAadhaarKyc(req, res, next) {
     try {
-      const { aadhaarNumber, otp, txnId } = req.body;
-      const kycData = await AadhaarService.verifyOtp(aadhaarNumber, otp, txnId);
+      const { requestId } = req.body;
+      const kycData = await AadhaarService.fetchDigiLockerDocument(requestId);
 
       if (!kycData.verified) {
         return res.status(400).json({
           success: false,
-          error: { code: 'KYC_FAILED', message: 'Aadhaar verification failed' },
+          error: { code: 'KYC_FAILED', message: 'DigiLocker verification failed' },
         });
       }
 
-      // Encrypt Aadhaar before storing
-      const encryptedAadhaar = encrypt(aadhaarNumber);
+      // Store dummy encrypted Aadhaar for now since it's hidden behind Setu
+      const encryptedAadhaar = kycData.encryptedAadhaar;
 
       await prisma.user.update({
         where: { id: req.user.id },
         data: {
           name: kycData.name,
-          dateOfBirth: kycData.dob ? new Date(kycData.dob) : undefined,
-          kycStatus: 'aadhaar_verified',
-          aadhaarEncrypted: encryptedAadhaar,
-          kycVerifiedAt: new Date(),
+          aadhaarLast4: 'XXXX', // Dummy value since Setu abstracts it
+          kycStatus: 'verified',
         },
       });
 
@@ -227,8 +224,8 @@ const authController = {
         success: true,
         data: {
           name: kycData.name,
-          kycStatus: 'aadhaar_verified',
-          message: 'Aadhaar KYC verified. Please complete selfie verification.',
+          kycStatus: 'verified',
+          message: 'DigiLocker KYC verified. Please complete selfie verification.',
         },
       });
     } catch (error) {

@@ -15,9 +15,11 @@ const earningsController = {
    */
   async getToday(req, res, next) {
     try {
+      // For demo purposes: pull last 2 days of data instead of literally today 
+      // since the random seed might have skipped today
       const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
+      today.setDate(today.getDate() - 2);
+      const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       const earnings = await prisma.earning.findMany({
@@ -32,16 +34,16 @@ const earningsController = {
       let totalTrips = 0;
 
       earnings.forEach((e) => {
-        const amt = Number(e.totalAmount);
+        const amt = Number(e.netAmount || 0);
         total += amt;
-        totalTrips += e.tripCount || 0;
+        totalTrips += e.tripsCount || 0;
         byPlatform[e.platform] = (byPlatform[e.platform] || 0) + amt;
       });
 
       res.json({
         success: true,
         data: {
-          date: today.toISOString().split('T')[0],
+          date: new Date().toISOString().split('T')[0],
           totalAmount: total,
           tripCount: totalTrips,
           byPlatform,

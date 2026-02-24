@@ -1,74 +1,142 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#0d9488" />
+  <meta name="theme-color" content="#0D1B3E" />
   <title>GigPay — Offline</title>
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
     body {
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      background: #0f172a;
-      color: #e2e8f0;
+      font-family: sans-serif;
+      background: #0D1B3E;
+      /* gigpay-navy */
+      color: #FFFFFF;
       display: flex;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 2rem;
+      padding: 24px;
       text-align: center;
     }
-    .container { max-width: 400px; }
-    .icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 1.5rem;
-      background: #0d9488;
-      border-radius: 50%;
+
+    .container {
+      max-width: 420px;
+      width: 100%;
+    }
+
+    .logo {
+      font-family: serif;
+      font-weight: bold;
+      font-size: 32px;
+      color: #C8F135;
+      /* gigpay-lime */
+      margin-bottom: 24px;
+    }
+
+    h1 {
+      font-family: serif;
+      font-size: 36px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: #C8F135;
+    }
+
+    p {
+      font-size: 16px;
+      line-height: 1.5;
+      color: #D4D8C8;
+      /* gigpay-border */
+      margin-bottom: 32px;
+    }
+
+    .feature-list {
+      background: #1A2D5A;
+      /* gigpay-navy-mid */
+      border: 1.5px solid #D4D8C8;
+      border-radius: 16px;
+      padding: 24px;
+      text-align: left;
+      margin-bottom: 32px;
+    }
+
+    .feature-list h3 {
+      font-size: 14px;
+      color: #C8F135;
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .feature-list ul {
+      list-style: none;
+    }
+
+    .feature-list li {
+      margin-bottom: 12px;
+      font-size: 14px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      font-size: 2rem;
     }
-    h1 {
-      font-size: 1.5rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-      color: #f1f5f9;
+
+    .feature-list li::before {
+      content: '✓';
+      color: #C8F135;
+      margin-right: 12px;
+      font-weight: bold;
     }
-    p {
-      font-size: 1rem;
-      line-height: 1.6;
-      color: #94a3b8;
-      margin-bottom: 1.5rem;
-    }
+
     .btn {
-      display: inline-block;
-      padding: 0.75rem 2rem;
-      background: #0d9488;
-      color: white;
-      border: none;
-      border-radius: 0.75rem;
-      font-size: 1rem;
-      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      min-height: 52px;
+      background: #C8F135;
+      color: #0D1B3E;
+      border: 2px solid #0D1B3E;
+      border-radius: 12px;
+      box-shadow: 3px 3px 0px #0DB13E;
+      /* static brutalist shadow without real color token for fallback */
+      font-size: 16px;
+      font-weight: bold;
       cursor: pointer;
       text-decoration: none;
-      transition: background 0.2s;
     }
-    .btn:hover { background: #0f766e; }
+
+    .btn:active {
+      box-shadow: 0px 0px 0px transparent;
+      transform: translate(3px, 3px);
+    }
   </style>
 </head>
+
 <body>
   <div class="container">
-    <div class="icon">📡</div>
-    <h1>You're Offline</h1>
+    <div class="logo">GigPay</div>
+    <h1>You're offline</h1>
     <p>
-      It looks like you've lost your internet connection.
-      Some features may be unavailable until you're back online.
+      It looks like you've lost your internet connection. Don't worry, your data is safe!
     </p>
+
+    <div class="feature-list">
+      <h3>Available Offline</h3>
+      <ul>
+        <li>Check available balance</li>
+        <li>View recent transactions</li>
+      </ul>
+    </div>
+
     <button class="btn" onclick="window.location.reload()">
-      Try Again
+      Try Reconnecting
     </button>
   </div>
 </body>
+
 </html>

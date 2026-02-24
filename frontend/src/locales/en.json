@@ -1,0 +1,15 @@
+{
+    "app": {
+        "name": "GigPay",
+        "tagline": "Instant Earnings. Smart Tools. Financial Freedom.",
+        "building": "🚧 Building in progress..."
+    },
+    "offline": {
+        "title": "You're offline",
+        "description": "It looks like you've lost your internet connection. Don't worry, your data is safe!",
+        "available": "Available Offline",
+        "balance": "Check available balance",
+        "transactions": "View recent transactions",
+        "retry": "Try Reconnecting"
+    }
+}

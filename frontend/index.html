@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <meta name="theme-color" content="#0d9488" />
+    <meta name="theme-color" content="#0D1B3E" />
     <meta name="description" content="GigPay — Instant Earnings. Smart Tools. Financial Freedom." />
 
     <!-- PWA meta tags -->
@@ -19,12 +19,16 @@
     <!-- Preconnect to external domains -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300;1,400;1,500&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Syne:wght@400..800&display=swap" rel="stylesheet">
+
 
     <title>GigPay — Financial OS for Gig Workers</title>
   </head>
-  <body class="bg-dark-900 text-white antialiased">
-    <div id="root"></div>
+  <body class="bg-gigpay-surface text-gigpay-text-primary antialiased">
+    <!-- Desktop wrapper constraints (Max 420px map per PRD) -->
+    <div class="flex flex-col items-center min-h-screen bg-[#E5E9DF]">
+      <div id="root" class="w-full max-w-[420px] bg-gigpay-surface min-h-screen relative shadow-lg overflow-x-hidden"></div>
+    </div>
     <noscript>
       <div style="padding: 2rem; text-align: center; font-family: sans-serif;">
         <h1>GigPay</h1>
