@@ -1,0 +1,214 @@
+{
+    "intents": [
+        {
+            "name": "CHECK_BALANCE",
+            "triggers_en": [
+                "balance",
+                "wallet",
+                "how much left",
+                "available balance"
+            ],
+            "triggers_hi": [
+                "bakiya",
+                "kitna hai",
+                "paise kitne",
+                "wallet balance"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "balance",
+                "cashout"
+            ]
+        },
+        {
+            "name": "CASHOUT",
+            "triggers_en": [
+                "cashout",
+                "withdraw",
+                "cash out",
+                "transfer money"
+            ],
+            "triggers_hi": [
+                "nikalo",
+                "nikal",
+                "paise nikal"
+            ],
+            "requires_entities": [
+                "amount"
+            ],
+            "sample_responses": [
+                "cashout_step1",
+                "cashout_success"
+            ]
+        },
+        {
+            "name": "CHECK_EARNINGS_TODAY",
+            "triggers_en": [
+                "earnings",
+                "income",
+                "how much earned",
+                "today earnings"
+            ],
+            "triggers_hi": [
+                "kamai",
+                "kamaya",
+                "aaj kitna"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "earningsToday",
+                "forecast"
+            ]
+        },
+        {
+            "name": "GET_FORECAST",
+            "triggers_en": [
+                "forecast",
+                "predict",
+                "tomorrow earnings",
+                "expected"
+            ],
+            "triggers_hi": [
+                "kal kamai",
+                "forecast",
+                "predict karo"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "forecast",
+                "zones"
+            ]
+        },
+        {
+            "name": "GET_HOT_ZONES",
+            "triggers_en": [
+                "zones",
+                "hot zone",
+                "where to go",
+                "best area",
+                "heatmap"
+            ],
+            "triggers_hi": [
+                "zones",
+                "kahaan jaun",
+                "kahan jaana",
+                "garam area"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "zones"
+            ]
+        },
+        {
+            "name": "APPLY_LOAN",
+            "triggers_en": [
+                "loan",
+                "borrow",
+                "emergency money",
+                "credit"
+            ],
+            "triggers_hi": [
+                "loan",
+                "udhaar",
+                "paise chahiye"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "loanEligible",
+                "loanApplied"
+            ]
+        },
+        {
+            "name": "ACTIVATE_INSURANCE",
+            "triggers_en": [
+                "insurance",
+                "insure",
+                "protect",
+                "accident cover"
+            ],
+            "triggers_hi": [
+                "bima",
+                "insurance",
+                "protect karo"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "insurance",
+                "insuranceActivated"
+            ]
+        },
+        {
+            "name": "TAX_HELP",
+            "triggers_en": [
+                "tax",
+                "ITR",
+                "filing",
+                "deductions",
+                "TDS"
+            ],
+            "triggers_hi": [
+                "tax",
+                "ITR",
+                "deduction"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "tax"
+            ]
+        },
+        {
+            "name": "EXPENSE_SUMMARY",
+            "triggers_en": [
+                "expenses",
+                "spend",
+                "monthly expenses",
+                "how much spent"
+            ],
+            "triggers_hi": [
+                "kharche",
+                "kharcha",
+                "mahine ka kharcha"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "expenses"
+            ]
+        },
+        {
+            "name": "COMMUNITY_JOBS",
+            "triggers_en": [
+                "jobs",
+                "job near me",
+                "delivery work",
+                "freelance"
+            ],
+            "triggers_hi": [
+                "kaam chahiye",
+                "jobs",
+                "kaam"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "jobs"
+            ]
+        },
+        {
+            "name": "HELP",
+            "triggers_en": [
+                "help",
+                "menu",
+                "commands",
+                "hi",
+                "hello"
+            ],
+            "triggers_hi": [
+                "help",
+                "madad"
+            ],
+            "requires_entities": [],
+            "sample_responses": [
+                "help"
+            ]
+        }
+    ]
+}

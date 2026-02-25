@@ -9,7 +9,12 @@
     "lint": "eslint .",
     "test": "jest --coverage"
   },
-  "keywords": ["gigpay", "whatsapp", "bot", "chatbot"],
+  "keywords": [
+    "gigpay",
+    "whatsapp",
+    "bot",
+    "chatbot"
+  ],
   "author": "GigPay Team",
   "license": "UNLICENSED",
   "dependencies": {
@@ -18,7 +23,8 @@
     "axios": "^1.7.7",
     "ioredis": "^5.4.0",
     "dotenv": "^16.4.5",
-    "uuid": "^9.0.1"
+    "uuid": "^9.0.1",
+    "winston": "^3.14.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.7",
