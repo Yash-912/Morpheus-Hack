@@ -26,10 +26,15 @@ SCALER_COLS = [
 ]
 
 # Binary features that must NOT be scaled
-BINARY_COLS = ["is_weekend", "is_holiday", "is_month_end", "worked"]
+BINARY_COLS = ["worked", "is_weekend", "is_holiday", "is_month_end"]
 
-# Full feature order for the model = 9 scaled continuous + 4 binary = 13
-MODEL_FEATURE_ORDER = SCALER_COLS + BINARY_COLS
+# Full feature order for the model (must match training order exactly)
+MODEL_FEATURE_ORDER = [
+    "worked", "rainfall_mm", "temp_celsius", "average_rating",
+    "incentives_earned", "efficiency_ratio", "is_weekend",
+    "is_holiday", "is_month_end", "prev_day_earnings", "prev_7day_avg",
+    "prev_30day_avg", "days_active_last_7",
+]
 
 
 class EarningsModel:
@@ -88,19 +93,19 @@ class EarningsModel:
             }
 
         try:
-            # 1. Build the continuous array in scaler-column order (9 features)
-            continuous = np.array(
-                [[float(features_dict[col]) for col in SCALER_COLS]]
-            )
+            # 1. Build features in exact MODEL_FEATURE_ORDER
+            raw = {col: float(features_dict[col]) for col in MODEL_FEATURE_ORDER}
 
-            # 2. Scale — shape (1, 9)
-            scaled = self._scaler.transform(continuous)
+            # 2. Scale the continuous features only
+            continuous = np.array([[raw[c] for c in SCALER_COLS]])
+            scaled_vals = self._scaler.transform(continuous)[0]
+            scaled_map = dict(zip(SCALER_COLS, scaled_vals))
 
-            # 3. Append binary features un-scaled — shape (1, 4)
-            binary = np.array(
-                [[float(features_dict[col]) for col in BINARY_COLS]]
-            )
-            X = np.hstack([scaled, binary])  # → (1, 13)
+            # 3. Build final feature vector in training order
+            X = np.array([[
+                scaled_map[col] if col in scaled_map else raw[col]
+                for col in MODEL_FEATURE_ORDER
+            ]])  # → (1, 13)
 
             # 6. Predict
             prediction = self._model.predict(X)[0]

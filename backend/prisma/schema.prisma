@@ -729,6 +729,7 @@ model ForecastData {
   incentivesEarned Float    @default(0) @map("incentives_earned")
   netEarnings      Float    @default(0) @map("net_earnings")
   efficiencyRatio  Float    @default(0) @map("efficiency_ratio")
+  totalEarnings    Float    @default(0) @map("total_earnings") // for graph only — NOT sent to ML model
 
   createdAt        DateTime @default(now()) @map("created_at")
 

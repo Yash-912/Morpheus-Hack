@@ -58,9 +58,11 @@ async def _load_models():
 # ── Routers ─────────────────────────────────────────────────────
 from routers.predict import router as predict_router        # noqa: E402
 from routers.sms_classify import router as sms_router       # noqa: E402
+from routers.insights import router as insights_router      # noqa: E402
 
 app.include_router(predict_router)
 app.include_router(sms_router)
+app.include_router(insights_router)
 
 
 # ── Health check ────────────────────────────────────────────────
