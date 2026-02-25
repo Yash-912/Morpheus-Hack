@@ -11,6 +11,9 @@ import os
 from collections import defaultdict
 from datetime import datetime
 
+from dotenv import load_dotenv
+load_dotenv()  # load ml-service/.env
+
 from fastapi import APIRouter, HTTPException
 
 from schemas.insights_schema import InsightItem, InsightsResponse
@@ -21,10 +24,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/insights", tags=["insights"])
 
 # ── LLM config ──────────────────────────────────────────────────
-INSIGHTS_MODEL_API_KEY = os.getenv(
-    "INSIGHTS_MODEL_API_KEY",
-    "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",
-)
+INSIGHTS_MODEL_API_KEY = os.getenv("INSIGHTS_MODEL_API_KEY", "")
 INSIGHTS_MODEL_NAME = os.getenv(
     "INSIGHTS_MODEL_NAME",
     "meta-llama/llama-3.2-3b-instruct:free",
