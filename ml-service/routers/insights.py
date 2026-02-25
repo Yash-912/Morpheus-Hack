@@ -1,23 +1,26 @@
 """
 Financial insights router — LLM-powered personalised advice.
 
-GET /insights/{user_id}  → aggregated data → OpenRouter LLM → structured insights
+GET /insights/{user_id}  → last 7 days earnings + expenses → LLM → structured insights
 GET /insights/health     → connectivity check
+
+Falls back to DATA-DRIVEN insights (not generic seeds) when LLM is unavailable.
 """
 
 import json
 import logging
 import os
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
 load_dotenv()  # load ml-service/.env
 
 from fastapi import APIRouter, HTTPException
+from sqlalchemy import text
 
 from schemas.insights_schema import InsightItem, InsightsResponse
-from utils.db import get_earnings_last_90, get_expenses_last_90
+from utils.db import get_engine
 
 logger = logging.getLogger(__name__)
 
@@ -31,234 +34,273 @@ INSIGHTS_MODEL_NAME = os.getenv(
 )
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 
-# ── Day-of-week labels ──────────────────────────────────────────
-DOW_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
 
-# ── Seed insights (returned when data is empty or LLM fails) ───
-SEED_INSIGHTS: list[dict] = [
-    {
-        "type": "earnings_pattern",
-        "title": "Friday and Saturday are your best earning days",
-        "body": "Zomato delivery partners in Mumbai typically earn 30-40% more on weekends due to higher order volumes. Prioritise being online from 7PM to 11PM on these days.",
-        "action": "Set a goal to complete 25+ orders on Fridays to hit the Rs.250 incentive tier.",
-    },
-    {
-        "type": "tax",
-        "title": "Your fuel and toll expenses are tax deductible",
-        "body": "As a gig worker under Section 44AD, fuel, toll, and vehicle maintenance expenses can be claimed as business deductions, reducing your taxable income significantly.",
-        "action": "Save all fuel receipts and FASTag statements. GigPay auto-tracks these from your SMS.",
-    },
-    {
-        "type": "savings",
-        "title": "Start a Rs.50 daily savings habit",
-        "body": "Setting aside just Rs.50 per working day adds up to Rs.1,500 per month and Rs.18,000 per year — enough to cover a major vehicle repair without going into debt.",
-        "action": "Enable round-up savings in GigPay to automatically save spare change after each payout.",
-    },
-    {
-        "type": "spending",
-        "title": "Fuel is typically the biggest controllable expense",
-        "body": "Most Mumbai delivery partners spend 25-35% of earnings on fuel. Switching to a CNG vehicle or electric bike can cut this by up to 60%, adding Rs.3,000+ to monthly savings.",
-        "action": "Check BEST and government EV subsidy schemes available for gig workers in Maharashtra.",
-    },
-    {
-        "type": "advice",
-        "title": "Build a 30-day emergency fund first",
-        "body": "Before any investment, aim to save one month of average earnings (around Rs.30,000) as an emergency fund. This protects you during illness, vehicle breakdown, or platform downtime.",
-        "action": "Open a separate zero-balance savings account and transfer Rs.1,000 after every 10 working days.",
-    },
-]
+# ═══════════════════════════════════════════════════════════════
+#  Data fetching — last 7 days from actual tables
+# ═══════════════════════════════════════════════════════════════
+def _fetch_last7_earnings(user_id: str) -> list[dict]:
+    """Get last 7 days of earnings from forecast_data table."""
+    engine = get_engine()
+    cutoff = (datetime.utcnow() - timedelta(days=7)).date()
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT date, net_earnings, incentives_earned, total_earnings, worked
+                FROM forecast_data
+                WHERE user_id = :uid AND date >= :cutoff
+                ORDER BY date ASC
+            """), {"uid": user_id, "cutoff": cutoff}).mappings().all()
+            return [dict(r) for r in rows]
+    except Exception as exc:
+        logger.error("Failed to fetch earnings: %s", exc)
+        return []
+
+
+def _fetch_last7_expenses(user_id: str) -> list[dict]:
+    """Get last 7 days of expenses from expenses table."""
+    engine = get_engine()
+    cutoff = (datetime.utcnow() - timedelta(days=7)).date()
+    try:
+        with engine.connect() as conn:
+            rows = conn.execute(text("""
+                SELECT date, amount, category, merchant, is_tax_deductible
+                FROM expenses
+                WHERE user_id = :uid AND date >= :cutoff
+                ORDER BY date ASC
+            """), {"uid": user_id, "cutoff": cutoff}).mappings().all()
+            return [dict(r) for r in rows]
+    except Exception as exc:
+        logger.error("Failed to fetch expenses: %s", exc)
+        return []
 
 
 # ═══════════════════════════════════════════════════════════════
-#  Helper — aggregate raw rows into the summary JSON
+#  Data-driven insights — NO LLM needed
 # ═══════════════════════════════════════════════════════════════
-def _aggregate(
-    earnings: list[dict],
-    expenses: list[dict],
-) -> dict:
+def _generate_data_insights(earnings: list[dict], expenses: list[dict]) -> list[dict]:
     """
-    Turn raw DB rows into the pre-aggregated JSON structure
-    described in the spec.  All monetary values → rupees.
+    Generate personalised insights from real data.
+    This runs when LLM is unavailable or as primary output.
+    Every insight references actual numbers from the user's data.
     """
+    insights = []
 
-    # ── Earnings aggregation ────────────────────────────────────
-    total_earnings_paise = 0
-    monthly_earnings: dict[str, dict] = defaultdict(
-        lambda: {"total_paise": 0, "days_worked": 0}
-    )
-    dow_earnings: dict[int, list[float]] = defaultdict(list)
-    total_trips = 0
-    total_hours = 0.0
+    # ── Earnings analysis ──────────────────────────────────────
+    total_earned_paise = 0
     days_worked = 0
-    platform = "Zomato"  # default
+    best_day_earn = 0
+    best_day_date = ""
+    worst_day_earn = float("inf")
+    worst_day_date = ""
 
     for row in earnings:
-        d = row["date"]
-        if isinstance(d, str):
-            d = datetime.fromisoformat(d)
-        net = int(row.get("net_amount") or 0)
-        total_earnings_paise += net
-        trips = int(row.get("trips_count") or 0)
-        hours = float(row.get("hours_worked") or 0)
-        total_trips += trips
-        total_hours += hours
-        days_worked += 1
-        if row.get("platform"):
-            platform = row["platform"]
+        net = float(row.get("net_earnings") or 0)
+        inc = float(row.get("incentives_earned") or 0)
+        worked = int(row.get("worked") or 0)
+        day_total = net + inc
+        total_earned_paise += day_total
 
-        month_label = d.strftime("%B %Y")  # e.g. "November 2023"
-        monthly_earnings[month_label]["total_paise"] += net
-        monthly_earnings[month_label]["days_worked"] += 1
+        if worked:
+            days_worked += 1
+            d = row.get("date")
+            if isinstance(d, datetime):
+                d_str = d.strftime("%d %b")
+            elif hasattr(d, "strftime"):
+                d_str = d.strftime("%d %b")
+            else:
+                d_str = str(d)[:10]
 
-        dow_earnings[d.weekday()].append(net / 100)
+            if day_total > best_day_earn:
+                best_day_earn = day_total
+                best_day_date = d_str
+            if day_total < worst_day_earn:
+                worst_day_earn = day_total
+                worst_day_date = d_str
 
-    total_earnings_rupees = round(total_earnings_paise / 100, 2)
+    total_earned_rs = round(total_earned_paise / 100, 0)
+    avg_daily_rs = round(total_earned_rs / max(days_worked, 1), 0)
+    best_rs = round(best_day_earn / 100, 0)
+    worst_rs = round(worst_day_earn / 100, 0) if worst_day_earn < float("inf") else 0
 
-    # Monthly breakdown
-    monthly_breakdown = []
-    for month, data in monthly_earnings.items():
-        total_r = round(data["total_paise"] / 100, 2)
-        days = data["days_worked"] or 1
-        monthly_breakdown.append({
-            "month": month,
-            "total_rupees": total_r,
-            "avg_daily_rupees": round(total_r / days, 2),
-            "days_worked": days,
+    if days_worked > 0:
+        insights.append({
+            "type": "earnings_pattern",
+            "title": f"You earned ₹{total_earned_rs:,.0f} in the last 7 days",
+            "body": f"You worked {days_worked} days with an average of ₹{avg_daily_rs:,.0f}/day. "
+                    f"Your best day was {best_day_date} (₹{best_rs:,.0f}) "
+                    f"and your slowest day was {worst_day_date} (₹{worst_rs:,.0f}).",
+            "action": f"Try to replicate what made {best_day_date} successful — same time slots, same areas.",
         })
 
-    # Best / worst day of week
-    dow_avg = {
-        dow: (sum(vals) / len(vals)) if vals else 0
-        for dow, vals in dow_earnings.items()
-    }
-    best_dow = DOW_NAMES[max(dow_avg, key=dow_avg.get)] if dow_avg else "Saturday"
-    worst_dow = DOW_NAMES[min(dow_avg, key=dow_avg.get)] if dow_avg else "Monday"
-
-    avg_trips = round(total_trips / max(days_worked, 1), 1)
-    avg_hours = round(total_hours / max(days_worked, 1), 1)
-
-    # ── Expenses aggregation ────────────────────────────────────
-    total_expenses_paise = 0
-    by_category: dict[str, int] = defaultdict(int)
+    # ── Expenses analysis ──────────────────────────────────────
+    total_spent_paise = 0
+    by_category: dict[str, float] = defaultdict(float)
     tax_deductible_paise = 0
 
     for row in expenses:
-        amt = int(row.get("amount") or 0)
-        total_expenses_paise += amt
+        amt = float(row.get("amount") or 0)
+        total_spent_paise += amt
         cat = str(row.get("category") or "other").lower()
         by_category[cat] += amt
         if row.get("is_tax_deductible"):
             tax_deductible_paise += amt
 
-    total_expenses_rupees = round(total_expenses_paise / 100, 2)
-    by_category_rupees = {k: round(v / 100, 2) for k, v in by_category.items()}
-    tax_deductible_rupees = round(tax_deductible_paise / 100, 2)
+    total_spent_rs = round(total_spent_paise / 100, 0)
 
-    expense_ratio = (
-        round((total_expenses_rupees / total_earnings_rupees) * 100, 1)
-        if total_earnings_rupees > 0
-        else 0
-    )
+    if by_category:
+        # Find top spending category
+        top_cat = max(by_category, key=by_category.get)
+        top_cat_rs = round(by_category[top_cat] / 100, 0)
+        top_pct = round((by_category[top_cat] / total_spent_paise) * 100, 0) if total_spent_paise > 0 else 0
 
-    net_savings = round(total_earnings_rupees - total_expenses_rupees, 2)
-    savings_rate = round(100 - expense_ratio, 1)
+        cat_breakdown = ", ".join(
+            f"{cat}: ₹{v/100:,.0f}" for cat, v in sorted(by_category.items(), key=lambda x: -x[1])
+        )
 
-    return {
-        "worker_summary": {
-            "platform": platform,
-            "city": "Mumbai",
-            "period": "last 90 days",
-        },
-        "earnings": {
-            "total_rupees": total_earnings_rupees,
-            "monthly_breakdown": monthly_breakdown,
-            "best_day_of_week": best_dow,
-            "worst_day_of_week": worst_dow,
-            "avg_trips_per_day": avg_trips,
-            "avg_hours_per_day": avg_hours,
-        },
-        "expenses": {
-            "total_rupees": total_expenses_rupees,
-            "by_category": by_category_rupees,
-            "tax_deductible_total_rupees": tax_deductible_rupees,
-            "expense_to_earnings_ratio_percent": expense_ratio,
-        },
-        "net_savings_rupees": net_savings,
-        "savings_rate_percent": savings_rate,
-    }
+        insights.append({
+            "type": "spending",
+            "title": f"You spent ₹{total_spent_rs:,.0f} — {top_cat} is {top_pct}% of it",
+            "body": f"Your spending breakdown: {cat_breakdown}. "
+                    f"{top_cat.capitalize()} is your biggest expense at ₹{top_cat_rs:,.0f}.",
+            "action": f"Look for ways to cut {top_cat} costs — even a 20% reduction saves ₹{top_cat_rs*0.2:,.0f}/week.",
+        })
+
+    # ── Savings insight ────────────────────────────────────────
+    net_savings_rs = total_earned_rs - total_spent_rs
+    if total_earned_rs > 0:
+        savings_pct = round((net_savings_rs / total_earned_rs) * 100, 0)
+        expense_pct = round((total_spent_rs / total_earned_rs) * 100, 0)
+
+        if net_savings_rs > 0:
+            monthly_proj = round(net_savings_rs * 4, 0)
+            insights.append({
+                "type": "savings",
+                "title": f"You saved ₹{net_savings_rs:,.0f} this week ({savings_pct}% savings rate)",
+                "body": f"You earned ₹{total_earned_rs:,.0f} and spent ₹{total_spent_rs:,.0f} ({expense_pct}% expense ratio). "
+                        f"At this rate, you'll save ~₹{monthly_proj:,.0f}/month.",
+                "action": "Set aside ₹50/day into a separate savings account to build a safety net.",
+            })
+        else:
+            insights.append({
+                "type": "savings",
+                "title": f"Your expenses (₹{total_spent_rs:,.0f}) exceeded earnings (₹{total_earned_rs:,.0f})",
+                "body": f"You're spending {expense_pct}% of your earnings. "
+                        f"The biggest drain is {top_cat} at ₹{round(by_category.get(top_cat, 0)/100):,.0f}.",
+                "action": "Track every expense this week and identify at least 2 non-essential spends to cut.",
+            })
+
+    # ── Tax deduction insight ──────────────────────────────────
+    tax_deductible_rs = round(tax_deductible_paise / 100, 0)
+    if tax_deductible_rs > 0:
+        annual_proj = round(tax_deductible_rs * 52, 0)
+        tax_saved = round(annual_proj * 0.05, 0)  # ~5% effective tax rate for gig workers
+        insights.append({
+            "type": "tax",
+            "title": f"₹{tax_deductible_rs:,.0f} of your expenses are tax-deductible",
+            "body": f"Fuel, tolls, and vehicle maintenance qualify under Section 44AD. "
+                    f"Projected annual deduction: ~₹{annual_proj:,.0f}, potentially saving ~₹{tax_saved:,.0f} in tax.",
+            "action": "Keep saving SMS receipts in GigPay — they auto-classify tax-deductible expenses.",
+        })
+
+    # If we have no insights at all (no data), add a generic one
+    if not insights:
+        insights.append({
+            "type": "advice",
+            "title": "Start tracking your earnings and expenses",
+            "body": "Once you have a few days of data, GigPay will give you personalised insights on your spending patterns and savings opportunities.",
+            "action": "Seed your earnings data and import SMS expenses to get started.",
+        })
+
+    return insights
 
 
 # ═══════════════════════════════════════════════════════════════
-#  Helper — build prompts
+#  LLM prompt building
 # ═══════════════════════════════════════════════════════════════
-SYSTEM_PROMPT = """You are GigPay's financial advisor for Indian gig workers.
+SYSTEM_PROMPT = """You are GigPay's financial advisor for Indian gig workers (delivery partners).
 You speak simply and practically. You give specific, data-driven
-advice based only on the numbers provided. You never give generic
-advice. Every insight must reference actual figures from the data.
-Keep response concise — maximum 5 insights, each 2-3 sentences.
+advice based ONLY on the numbers provided. Every insight MUST reference
+actual figures from the data. Keep response concise.
 Format your response as a JSON array of insight objects exactly like this:
 [
   {
     "type": "spending",
-    "title": "Fuel is your biggest expense",
-    "body": "You spent Rs.120 on fuel this quarter, which is 38% of your total expenses. Consider carpooling with other delivery partners on slow days to reduce this.",
-    "action": "Track your fuel receipts — they are 100% tax deductible."
+    "title": "Short clear title",
+    "body": "2-3 sentences referencing actual numbers from the data",
+    "action": "One specific actionable step"
   }
 ]
 Types must be one of: spending, savings, tax, earnings_pattern, advice
-Return only valid JSON. No extra text before or after the array."""
+Return ONLY valid JSON. No markdown, no extra text before or after the array."""
 
 
-def _build_user_prompt(agg: dict) -> str:
-    e = agg["earnings"]
-    x = agg["expenses"]
-    w = agg["worker_summary"]
+def _build_prompt(earnings: list[dict], expenses: list[dict]) -> str:
+    """Build a focused prompt using last 7 days of real data."""
+    daily_lines = []
+    total_earned = 0
+    days_worked = 0
 
-    monthly_lines = "\n".join(
-        f"  - {m['month']}: Rs.{m['total_rupees']} ({m['days_worked']} days, avg Rs.{m['avg_daily_rupees']}/day)"
-        for m in e["monthly_breakdown"]
-    )
+    for row in earnings:
+        d = row.get("date")
+        if isinstance(d, datetime):
+            d = d.strftime("%d %b")
+        elif hasattr(d, "strftime"):
+            d = d.strftime("%d %b")
+        else:
+            d = str(d)[:10]
+        net = float(row.get("net_earnings") or 0)
+        inc = float(row.get("incentives_earned") or 0)
+        worked = int(row.get("worked") or 0)
+        total_earned += net + inc
+        if worked:
+            days_worked += 1
+            daily_lines.append(f"  {d}: earned Rs.{net/100:.0f} + Rs.{inc/100:.0f} incentive")
+        else:
+            daily_lines.append(f"  {d}: day off")
 
-    cat_lines = "\n".join(
-        f"  - {cat}: Rs.{amt}" for cat, amt in x["by_category"].items()
-    )
+    by_cat: dict[str, float] = defaultdict(float)
+    total_spent = 0
+    expense_lines = []
+    for row in expenses:
+        amt = float(row.get("amount") or 0)
+        total_spent += amt
+        cat = str(row.get("category") or "other")
+        merchant = row.get("merchant") or "unknown"
+        by_cat[cat] += amt
+        expense_lines.append(f"  Rs.{amt/100:.0f} on {cat} ({merchant})")
 
-    avg_daily = round(e["total_rupees"] / max(sum(m["days_worked"] for m in e["monthly_breakdown"]), 1), 2)
+    cat_lines = "\n".join(f"  {c}: Rs.{v/100:.0f}" for c, v in by_cat.items())
 
-    return f"""Here is the financial data for a {w['platform']} delivery partner in {w['city']}
-for the last 90 days:
+    return f"""Last 7 days for a Zomato delivery partner in Mumbai:
 
-Earnings:
-- Total earned: Rs.{e['total_rupees']}
-- Monthly breakdown:
-{monthly_lines}
-- Best earning day: {e['best_day_of_week']}
-- Worst earning day: {e['worst_day_of_week']}
-- Average daily earnings: Rs.{avg_daily}
-- Average trips per day: {e['avg_trips_per_day']}
+EARNINGS:
+{chr(10).join(daily_lines) or '  No data'}
+Total: Rs.{total_earned/100:.0f} | Days worked: {days_worked} | Avg: Rs.{total_earned/100/max(days_worked,1):.0f}/day
 
-Expenses:
-- Total spent: Rs.{x['total_rupees']}
-- Breakdown by category:
-{cat_lines}
-- Tax deductible amount: Rs.{x['tax_deductible_total_rupees']}
-- Expenses as % of earnings: {x['expense_to_earnings_ratio_percent']}%
+EXPENSES:
+{chr(10).join(expense_lines) or '  None'}
+By category:
+{cat_lines or '  None'}
+Total spent: Rs.{total_spent/100:.0f}
 
-Savings:
-- Net savings: Rs.{agg['net_savings_rupees']}
-- Savings rate: {agg['savings_rate_percent']}%
+NET: Rs.{(total_earned-total_spent)/100:.0f}
 
-Provide 5 personalised insights and actionable advice based on this
-data. Focus on spending patterns, savings opportunities, tax deductions,
-and earnings optimisation. Keep advice specific to a Mumbai gig
-worker's real situation."""
+Give 4 insights:
+1. Earnings summary with actual daily amounts
+2. Spending analysis with categories
+3. Savings tip with real numbers
+4. One action they can do this week"""
 
 
 # ═══════════════════════════════════════════════════════════════
-#  Helper — call OpenRouter LLM
+#  LLM call
 # ═══════════════════════════════════════════════════════════════
 def _call_llm(user_prompt: str) -> list[dict] | None:
-    """Call OpenRouter API via openai SDK. Returns parsed JSON list or None."""
+    """Call OpenRouter API. Returns parsed JSON list or None."""
+    if not INSIGHTS_MODEL_API_KEY:
+        logger.info("No LLM API key — skipping LLM call")
+        return None
+
     try:
         from openai import OpenAI
 
@@ -266,7 +308,6 @@ def _call_llm(user_prompt: str) -> list[dict] | None:
             api_key=INSIGHTS_MODEL_API_KEY,
             base_url=OPENROUTER_BASE_URL,
         )
-
         response = client.chat.completions.create(
             model=INSIGHTS_MODEL_NAME,
             messages=[
@@ -275,13 +316,11 @@ def _call_llm(user_prompt: str) -> list[dict] | None:
             ],
             temperature=0.7,
             max_tokens=2048,
-            timeout=10,
+            timeout=15,
         )
-
         raw = response.choices[0].message.content.strip()
         logger.info("LLM raw response length: %d chars", len(raw))
 
-        # Strip markdown fences if present
         if raw.startswith("```"):
             raw = raw.split("\n", 1)[1]
             if raw.endswith("```"):
@@ -290,9 +329,7 @@ def _call_llm(user_prompt: str) -> list[dict] | None:
 
         parsed = json.loads(raw)
         if not isinstance(parsed, list):
-            logger.warning("LLM response is not a list, falling back to seed")
             return None
-
         return parsed
 
     except json.JSONDecodeError as exc:
@@ -308,86 +345,71 @@ def _call_llm(user_prompt: str) -> list[dict] | None:
 # ═══════════════════════════════════════════════════════════════
 @router.get("/health", name="insights_health")
 async def insights_health():
-    """Quick check: can we reach the LLM API?"""
     connected = False
     try:
         from openai import OpenAI
-
-        client = OpenAI(
-            api_key=INSIGHTS_MODEL_API_KEY,
-            base_url=OPENROUTER_BASE_URL,
-        )
+        client = OpenAI(api_key=INSIGHTS_MODEL_API_KEY, base_url=OPENROUTER_BASE_URL)
         resp = client.chat.completions.create(
             model=INSIGHTS_MODEL_NAME,
             messages=[{"role": "user", "content": "ping"}],
-            max_tokens=5,
-            timeout=5,
+            max_tokens=5, timeout=5,
         )
         connected = bool(resp.choices)
     except Exception as exc:
-        logger.warning("Insights health check failed: %s", exc)
+        logger.warning("Insights LLM check failed: %s", exc)
 
-    return {"status": "ok", "groq_connected": connected}
+    return {"status": "ok", "llm_connected": connected}
 
 
 @router.get("/{user_id}")
 async def get_insights(user_id: str):
     """
-    Fetch earnings + expenses → aggregate → LLM → structured insights.
-    Falls back to seed insights on any failure.
+    Last 7 days earnings + expenses → LLM (if available) → data-driven insights.
+    NEVER returns generic seeds — always uses actual user data.
     """
 
-    # 1. Fetch data from PostgreSQL
-    earnings = get_earnings_last_90(user_id)
-    expenses = get_expenses_last_90(user_id)
+    # 1. Fetch LAST 7 DAYS data
+    earnings = _fetch_last7_earnings(user_id)
+    expenses = _fetch_last7_expenses(user_id)
 
-    # 2. If no data at all → return seed insights immediately
-    if not earnings and not expenses:
-        logger.info("No data for user %s — returning seed insights", user_id)
-        return InsightsResponse(
-            user_id=user_id,
-            insights=[InsightItem(**s) for s in SEED_INSIGHTS],
-            is_seeded=True,
-        )
-
-    # 3. Aggregate
-    try:
-        aggregated = _aggregate(earnings, expenses)
-    except Exception as exc:
-        logger.error("Aggregation failed: %s — returning seed", exc)
-        return InsightsResponse(
-            user_id=user_id,
-            insights=[InsightItem(**s) for s in SEED_INSIGHTS],
-            is_seeded=True,
-        )
-
-    # 4. Build prompt and call LLM
-    user_prompt = _build_user_prompt(aggregated)
-    llm_result = _call_llm(user_prompt)
-
-    # 5. Parse and validate
-    if llm_result is None:
-        logger.info("LLM failed — returning seed insights for user %s", user_id)
-        return InsightsResponse(
-            user_id=user_id,
-            insights=[InsightItem(**s) for s in SEED_INSIGHTS],
-            is_seeded=True,
-        )
-
-    try:
-        validated = [InsightItem(**item) for item in llm_result]
-    except Exception as exc:
-        logger.error("LLM response validation failed: %s — returning seed", exc)
-        return InsightsResponse(
-            user_id=user_id,
-            insights=[InsightItem(**s) for s in SEED_INSIGHTS],
-            is_seeded=True,
-        )
-
-    logger.info("Generated %d live insights for user %s", len(validated), user_id)
-    return InsightsResponse(
-        user_id=user_id,
-        insights=validated,
-        is_seeded=False,
+    logger.info(
+        "User %s — fetched %d earnings rows, %d expense rows (last 7 days)",
+        user_id, len(earnings), len(expenses),
     )
 
+    # 2. If no data at all → return a "get started" message
+    if not earnings and not expenses:
+        logger.info("No data for user %s", user_id)
+        return InsightsResponse(
+            user_id=user_id,
+            insights=[InsightItem(
+                type="advice",
+                title="No data yet — let's get started",
+                body="Seed your earnings data and import a few SMS to see personalised financial insights here.",
+                action="Tap 'Seed Earnings Data' and 'Simulate SMS Import' on the chart page.",
+            )],
+            is_seeded=True,
+        )
+
+    # 3. Try LLM first
+    user_prompt = _build_prompt(earnings, expenses)
+    logger.info("Prompt built (%d chars), calling LLM...", len(user_prompt))
+    llm_result = _call_llm(user_prompt)
+
+    if llm_result:
+        try:
+            validated = [InsightItem(**item) for item in llm_result]
+            logger.info("Generated %d LLM insights for user %s", len(validated), user_id)
+            return InsightsResponse(user_id=user_id, insights=validated, is_seeded=False)
+        except Exception as exc:
+            logger.error("LLM response validation failed: %s", exc)
+
+    # 4. LLM failed → generate DATA-DRIVEN insights from real numbers
+    logger.info("LLM unavailable — generating data-driven insights for user %s", user_id)
+    data_insights = _generate_data_insights(earnings, expenses)
+
+    return InsightsResponse(
+        user_id=user_id,
+        insights=[InsightItem(**i) for i in data_insights],
+        is_seeded=False,  # NOT seeded — these use real data
+    )

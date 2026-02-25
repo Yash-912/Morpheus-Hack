@@ -72,6 +72,9 @@ const forecastController = {
                 return res.status(400).json({ success: false, error: 'CSV is empty or invalid' });
             }
 
+            // Clear old forecast data for this user before re-seeding
+            await prisma.forecastData.deleteMany({ where: { userId } });
+
             const inserted = await _upsertRows(rows);
 
             logger.info('Forecast data seeded from sample CSV', { userId, rows: inserted });

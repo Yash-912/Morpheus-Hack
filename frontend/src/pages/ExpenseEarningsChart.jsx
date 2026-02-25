@@ -9,18 +9,12 @@ import {
 } from 'lucide-react';
 import api from '../services/api.service';
 
-// ── Hardcoded realistic Mumbai delivery worker SMS for simulation ─
+// ── Realistic Mumbai delivery worker SMS (matching Jan-Feb 2026 earnings period) ─
 const DEMO_SMS = [
-    { body: 'Rs.450 debited at HP PETROL PUMP via UPI on 15-Jan', timestamp: '2023-01-15T10:30:00' },
-    { body: 'FASTag: Rs.65 deducted at MUMBAI-PUNE EXPRESSWAY toll plaza', timestamp: '2023-01-15T11:00:00' },
-    { body: 'Rs.486 paid to Zomato via UPI ref 302912837. -HDFC Bank', timestamp: '2023-01-16T13:20:00' },
-    { body: 'Rs.239 paid to Airtel via UPI — recharge successful', timestamp: '2023-01-17T09:15:00' },
-    { body: 'Rs.60 parking fee collected at BKC PARKING MUMBAI via FASTag', timestamp: '2023-01-18T14:45:00' },
-    { body: 'Rs.1200 paid to HERO HONDA SERVICE CENTER via UPI on 20-Jan', timestamp: '2023-01-20T11:30:00' },
-    { body: 'Rs.380 debited at BHARAT PETROLEUM, Andheri on 22-Jan', timestamp: '2023-01-22T08:00:00' },
-    { body: 'FASTag: Rs.85 deducted at WESTERN EXPRESS HIGHWAY on 24-Jan', timestamp: '2023-01-24T07:30:00' },
-    { body: 'Rs.340 paid to Swiggy India via UPI ref 837462910', timestamp: '2023-01-25T19:00:00' },
-    { body: 'Rs.299 debited for Jio recharge, validity 28 days. -JioCare', timestamp: '2023-01-28T10:00:00' },
+    { body: 'Rs.450 debited at HP PETROL PUMP via UPI on 12-Jan', timestamp: '2026-01-12T10:30:00' },
+    { body: 'FASTag: Rs.85 deducted at WESTERN EXPRESS HIGHWAY toll', timestamp: '2026-01-20T07:30:00' },
+    { body: 'Rs.1200 paid to HERO HONDA SERVICE CENTER via UPI on 05-Feb', timestamp: '2026-02-05T11:30:00' },
+    { body: 'Rs.299 debited for Jio recharge, validity 28 days. -JioCare', timestamp: '2026-02-18T10:00:00' },
 ];
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -84,7 +78,7 @@ export default function ExpenseEarningsChart() {
                 if (!monthMap[key]) {
                     monthMap[key] = { month: MONTHS[d.getMonth()], earnings: 0, expenses: 0 };
                 }
-                monthMap[key].earnings += (e.totalEarnings || 0);
+                monthMap[key].earnings += (e.totalEarnings || 0) / 100; // paise → rupees
             });
 
             expenses.forEach((e) => {

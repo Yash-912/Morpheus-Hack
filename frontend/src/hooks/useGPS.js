@@ -95,6 +95,13 @@ export function useGPS() {
                         'Location permission denied. Please enable GPS in your browser settings to use zone features.'
                     );
                     stopTracking();
+                } else if (err.code === err.TIMEOUT) {
+                    // Suppress timeout if we already have a valid position
+                    // — watchPosition fires timeout intermittently but recovers
+                    setLocation((prev) => {
+                        if (!prev) setError('GPS is taking too long. Move to an open area for better signal.');
+                        return prev;
+                    });
                 } else {
                     setError(`GPS error: ${err.message}`);
                 }
@@ -102,7 +109,7 @@ export function useGPS() {
             {
                 enableHighAccuracy: true,
                 maximumAge: 30000,
-                timeout: 10000,
+                timeout: 15000,
             }
         );
     }, [sendLocationToBackend]);
