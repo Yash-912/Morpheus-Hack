@@ -5,6 +5,8 @@ import BottomNav from './BottomNav';
 import OfflineBanner from './OfflineBanner';
 import { useAuth } from '../../hooks/useAuth';
 import { connectSocket, disconnectSocket } from '../../services/socket.service';
+import { GPSProvider } from '../../context/GPSContext';
+import GPSPrompt from '../GPSPrompt';
 
 const AppLayout = () => {
     const { user } = useAuth();
@@ -19,17 +21,22 @@ const AppLayout = () => {
     }, [user]);
 
     return (
-        <div className="flex flex-col min-h-screen bg-gigpay-surface relative">
-            <OfflineBanner />
-            <TopNav />
+        <GPSProvider>
+            <div className="flex flex-col min-h-screen bg-gigpay-surface relative">
+                <OfflineBanner />
+                <TopNav />
 
-            {/* Main content area - flex-grow ensures it takes remaining space, pb-24 avoids overlap with bottom nav */}
-            <main className="flex-grow pt-[72px] pb-24 px-4 overflow-x-hidden">
-                <Outlet />
-            </main>
+                {/* Main content area - flex-grow ensures it takes remaining space, pb-24 avoids overlap with bottom nav */}
+                <main className="flex-grow pt-[72px] pb-24 px-4 overflow-x-hidden">
+                    <Outlet />
+                </main>
 
-            <BottomNav />
-        </div>
+                <BottomNav />
+
+                {/* One-time GPS permission prompt */}
+                <GPSPrompt />
+            </div>
+        </GPSProvider>
     );
 };
 

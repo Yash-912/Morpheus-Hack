@@ -22,6 +22,8 @@ router.use('/savings', require('./savings.routes'));
 router.use('/insights', require('./insights.routes'));
 router.use('/notifications', require('./notifications.routes'));
 router.use('/forecast', require('./forecast.routes'));
+router.use('/location', require('./location.routes'));
+router.use('/zones', require('./zones.routes'));
 router.use('/webhooks', require('./webhooks.routes'));
 
 module.exports = router;

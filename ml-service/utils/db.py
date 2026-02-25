@@ -40,6 +40,10 @@ def _get_engine():
     return _engine
 
 
+# Public alias
+get_engine = _get_engine
+
+
 def get_earnings_last_90(user_id: str) -> List[Dict[str, Any]]:
     """
     Fetch earnings rows for a user from the last 90 days.

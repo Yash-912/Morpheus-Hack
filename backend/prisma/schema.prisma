@@ -273,6 +273,7 @@ model User {
   savings           Saving[]
   notifications     Notification[]
   forecastData      ForecastData[]
+  workerLocations   WorkerLocation[]
 
   @@index([city])
   @@map("users")
@@ -754,4 +755,42 @@ model FeatureFlag {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("feature_flags")
+}
+
+// ============================================================
+// Worker Location — GPS tracking data for zone clustering
+// ============================================================
+
+model WorkerLocation {
+  id        Int      @id @default(autoincrement())
+  userId    String   @map("user_id")
+  lat       Float
+  lng       Float
+  accuracy  Float?
+  speed     Float?
+  timestamp DateTime
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, timestamp])
+  @@map("worker_locations")
+}
+
+// ============================================================
+// Mumbai GPS Points — synthetic seed data for DBSCAN clustering
+// ============================================================
+
+model MumbaiGpsPoint {
+  id             Int      @id @default(autoincrement())
+  lat            Float
+  lng            Float
+  avgEarnings    Float    @map("avg_earnings")
+  avgIncentives  Float    @map("avg_incentives")
+  totalOrders    Float    @map("total_orders")
+  activeWorkers  Int      @map("active_workers")
+  areaHint       String   @map("area_hint")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  @@map("mumbai_gps_points")
 }
