@@ -272,6 +272,7 @@ model User {
   assignedJobs      CommunityJob[]   @relation("JobWorker")
   savings           Saving[]
   notifications     Notification[]
+  forecastData      ForecastData[]
 
   @@index([city])
   @@map("users")
@@ -711,6 +712,31 @@ model OtpSession {
   @@index([phone])
   @@index([expiresAt])
   @@map("otp_sessions")
+}
+
+// ============================================================
+// 13. FORECAST DATA  (ML pipeline raw rows — uploaded CSV)
+// ============================================================
+
+model ForecastData {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  date             DateTime @db.Date
+  worked           Int      @default(1)
+  rainfallMm       Float    @default(0) @map("rainfall_mm")
+  tempCelsius      Float    @default(0) @map("temp_celsius")
+  averageRating    Float    @default(0) @map("average_rating")
+  incentivesEarned Float    @default(0) @map("incentives_earned")
+  netEarnings      Float    @default(0) @map("net_earnings")
+  efficiencyRatio  Float    @default(0) @map("efficiency_ratio")
+
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+  @@index([userId])
+  @@map("forecast_data")
 }
 
 // ============================================================

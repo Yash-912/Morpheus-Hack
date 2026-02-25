@@ -160,7 +160,7 @@ const expensesController = {
 
       // Filter out non-expense classifications
       const expenseItems = classified.filter(
-        (c) => c.category && c.category !== 'not_expense' && c.amount > 0
+        (c) => c.category && c.category !== 'not_expense' && c.category !== 'no_expense' && c.amount > 0
       );
 
       const created = [];
@@ -171,11 +171,11 @@ const expensesController = {
             userId: req.user.id,
             category: item.category,
             amount: BigInt(item.amount),
-            description: item.merchant ? `Payment to ${item.merchant}` : 'Auto-detected from SMS',
+            notes: item.merchant ? `Payment to ${item.merchant}` : 'Auto-detected from SMS',
             merchant: item.merchant || null,
             date: item.date ? new Date(item.date) : new Date(),
-            source: 'sms',
-            taxDeductible: catMeta?.taxDeductible || false,
+            source: 'sms_auto',
+            isTaxDeductible: catMeta?.taxDeductible || item.is_tax_deductible || false,
           },
         });
         created.push({ ...expense, amount: Number(expense.amount) });

@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useInsights } from '../hooks/useInsights';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { useUIStore } from '../store/ui.store';
-import { Activity, Lightbulb, TrendingUp, TrendingDown, Users } from 'lucide-react';
+import { Activity, Lightbulb, TrendingUp, TrendingDown, Users, Upload, Zap, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
+import api from '../services/api.service';
+import ExpenseEarningsChart from './ExpenseEarningsChart';
 
 const formatRupee = (val) => `₹${(val / 100).toFixed(0)}`;
 
@@ -23,9 +25,89 @@ const Insights = () => {
     const setActiveTab = useUIStore(state => state.setActiveTab);
     const { performance, algoInsights, isLoadingPerformance, isLoadingAlgo } = useInsights(null, 'bangalore');
 
+    // ── Forecast state ──────────────────────────────────────────
+    const [hasData, setHasData] = useState(false);
+    const [checkingData, setCheckingData] = useState(true);
+    const [uploadStatus, setUploadStatus] = useState(null); // null | 'success' | 'error'
+    const [uploadMsg, setUploadMsg] = useState('');
+    const [uploading, setUploading] = useState(false);
+    const [predicting, setPredicting] = useState(false);
+    const [forecast, setForecast] = useState(null);
+    const [forecastError, setForecastError] = useState(null);
+
     useEffect(() => {
-        setActiveTab('more'); // Fits under the "More" or "Community" tab
+        setActiveTab('more');
     }, [setActiveTab]);
+
+    // Check if user already has forecast data
+    useEffect(() => {
+        const check = async () => {
+            try {
+                const res = await api.get('/forecast/has-data');
+                setHasData(res.data.hasData);
+            } catch {
+                // silent — user may not be logged in
+            } finally {
+                setCheckingData(false);
+            }
+        };
+        check();
+    }, []);
+
+    // ── CSV Upload handler ──────────────────────────────────────
+    const handleUpload = useCallback(async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploading(true);
+        setUploadStatus(null);
+        setUploadMsg('');
+        setForecast(null);
+        setForecastError(null);
+
+        try {
+            const form = new FormData();
+            form.append('file', file);
+
+            const res = await api.post('/forecast/upload-csv', form, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+
+            setUploadStatus('success');
+            setUploadMsg(res.data.message || 'CSV uploaded successfully');
+            setHasData(true);
+        } catch (err) {
+            setUploadStatus('error');
+            setUploadMsg(
+                err.response?.data?.error?.message ||
+                err.response?.data?.error ||
+                'Upload failed — please check your CSV format'
+            );
+        } finally {
+            setUploading(false);
+            // Reset the file input so same file can be re-selected
+            e.target.value = '';
+        }
+    }, []);
+
+    // ── Forecast handler ────────────────────────────────────────
+    const handleForecast = useCallback(async () => {
+        setPredicting(true);
+        setForecast(null);
+        setForecastError(null);
+
+        try {
+            const res = await api.post('/forecast/predict');
+            setForecast(res.data.data);
+        } catch (err) {
+            setForecastError(
+                err.response?.data?.error ||
+                'Prediction failed — make sure the ML service is running'
+            );
+        } finally {
+            setPredicting(false);
+        }
+    }, []);
 
     return (
         <div className="flex flex-col gap-6 animate-fade-in pb-8">
@@ -33,6 +115,131 @@ const Insights = () => {
                 <h1 className="text-display-sm font-syne font-bold text-gigpay-navy mb-1">Insights & Analytics</h1>
                 <p className="text-body-md text-gigpay-text-secondary">AI-powered earnings forecast</p>
             </header>
+
+            {/* ═══════════════════════════════════════════════════
+                Expense vs Earnings Chart + SMS Simulation
+                ═══════════════════════════════════════════════════ */}
+            <ExpenseEarningsChart />
+
+            {/* ═══════════════════════════════════════════════════
+                Forecast Earnings Section
+                ═══════════════════════════════════════════════════ */}
+            <section>
+                <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-heading-md flex items-center gap-2">
+                        <Zap size={20} className="text-teal-500" /> Forecast Earnings
+                    </h2>
+                </div>
+
+                <Card className="bg-white p-5">
+                    {checkingData ? (
+                        <div className="flex items-center justify-center py-6 text-gigpay-text-muted">
+                            <Loader2 size={20} className="animate-spin mr-2" /> Checking data…
+                        </div>
+                    ) : (
+                        <div className="flex flex-col gap-4">
+                            {/* Upload CSV */}
+                            <div>
+                                <p className="text-caption text-gigpay-text-secondary mb-2">
+                                    {hasData
+                                        ? '✅ Earnings data loaded — you can forecast directly, or upload a new CSV to update.'
+                                        : 'Upload your platform earnings CSV to get started.'}
+                                </p>
+
+                                <label
+                                    htmlFor="forecast-csv"
+                                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all
+                                        ${uploading
+                                            ? 'bg-gray-100 text-gray-400 cursor-wait'
+                                            : 'bg-gigpay-surface text-gigpay-navy border border-gigpay-border hover:border-teal-400 hover:shadow-sm'
+                                        }`}
+                                >
+                                    {uploading ? (
+                                        <><Loader2 size={16} className="animate-spin" /> Uploading…</>
+                                    ) : (
+                                        <><Upload size={16} /> Upload Earnings CSV</>
+                                    )}
+                                </label>
+                                <input
+                                    id="forecast-csv"
+                                    type="file"
+                                    accept=".csv"
+                                    className="hidden"
+                                    onChange={handleUpload}
+                                    disabled={uploading}
+                                />
+                            </div>
+
+                            {/* Upload status message */}
+                            {uploadStatus === 'success' && (
+                                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl px-4 py-2.5 text-sm">
+                                    <CheckCircle size={16} /> {uploadMsg}
+                                </div>
+                            )}
+                            {uploadStatus === 'error' && (
+                                <div className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 rounded-xl px-4 py-2.5 text-sm">
+                                    <AlertCircle size={16} /> {uploadMsg}
+                                </div>
+                            )}
+
+                            {/* Forecast button */}
+                            {hasData && (
+                                <button
+                                    onClick={handleForecast}
+                                    disabled={predicting}
+                                    className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all
+                                        ${predicting
+                                            ? 'bg-gray-200 text-gray-400 cursor-wait'
+                                            : 'bg-gigpay-navy text-white hover:bg-gigpay-navy/90 shadow-brutal-sm active:translate-y-0.5'
+                                        }`}
+                                >
+                                    {predicting ? (
+                                        <><Loader2 size={16} className="animate-spin" /> Predicting…</>
+                                    ) : (
+                                        <><Zap size={16} /> Forecast Tomorrow's Earnings</>
+                                    )}
+                                </button>
+                            )}
+
+                            {/* Forecast error */}
+                            {forecastError && (
+                                <div className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 rounded-xl px-4 py-2.5 text-sm">
+                                    <AlertCircle size={16} /> {forecastError}
+                                </div>
+                            )}
+
+                            {/* Forecast result */}
+                            {forecast && (
+                                <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5 mt-1">
+                                    <p className="text-caption text-teal-700 font-semibold mb-1">
+                                        Tomorrow's Predicted Earnings
+                                    </p>
+                                    <h3 className="text-display-sm font-bold text-gigpay-navy mb-3">
+                                        ₹{forecast.predicted_earnings_rupees?.toLocaleString('en-IN', {
+                                            minimumFractionDigits: 2,
+                                            maximumFractionDigits: 2,
+                                        })}
+                                    </h3>
+                                    <div className="flex items-center gap-3">
+                                        <Badge
+                                            variant={
+                                                forecast.confidence >= 0.85 ? 'success'
+                                                    : forecast.confidence >= 0.75 ? 'warning'
+                                                        : 'default'
+                                            }
+                                        >
+                                            {(forecast.confidence * 100).toFixed(0)}% confidence
+                                        </Badge>
+                                        <span className="text-caption text-gigpay-text-secondary">
+                                            ≈ ₹{(forecast.predicted_earnings_paise / 100).toFixed(0)} paise-based
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </Card>
+            </section>
 
             {/* Performance Overview */}
             <section>

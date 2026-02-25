@@ -12,7 +12,7 @@ const app = require('./app');
 const { connectRedis } = require('./config/redis');
 const logger = require('./utils/logger.utils');
 
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 const server = http.createServer(app);
 
