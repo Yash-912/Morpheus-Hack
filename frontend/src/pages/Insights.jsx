@@ -3,10 +3,12 @@ import { useInsights } from '../hooks/useInsights';
 import { Card } from '../components/ui/Card';
 import { Badge } from '../components/ui/Badge';
 import { useUIStore } from '../store/ui.store';
-import { Activity, Lightbulb, TrendingUp, TrendingDown, Users, Upload, Zap, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Activity, Lightbulb, TrendingUp, TrendingDown, Users, Upload, Zap, CheckCircle, AlertCircle, Loader2, ArrowRight, Calculator } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api.service';
 import ExpenseEarningsChart from './ExpenseEarningsChart';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '../components/ui/Button';
 
 const formatRupee = (val) => `₹${(val / 100).toFixed(0)}`;
 
@@ -109,6 +111,8 @@ const Insights = () => {
         }
     }, []);
 
+    const navigate = useNavigate();
+
     return (
         <div className="flex flex-col gap-6 animate-fade-in pb-8">
             <header>
@@ -120,6 +124,23 @@ const Insights = () => {
                 Expense vs Earnings Chart + SMS Simulation
                 ═══════════════════════════════════════════════════ */}
             <ExpenseEarningsChart />
+
+            {/* Tax Assistant card — link to /insights/tax */}
+            <Card
+                onClick={() => navigate('/insights/tax')}
+                className="p-4 bg-gradient-to-r from-[#FFFAEB] to-[#FEF3C7] border-[#FFD166] cursor-pointer active:translate-y-0.5 active:shadow-none transition-all"
+            >
+                <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-white flex items-center justify-center border border-[#FFD166] shadow-sm">
+                        <Calculator size={22} className="text-[#D97706]" />
+                    </div>
+                    <div className="flex-1">
+                        <h3 className="font-syne font-bold text-gigpay-navy text-sm">Tax Assistant</h3>
+                        <p className="text-xs text-gigpay-text-secondary">Section 44AD calculator, deductions & ITR filing</p>
+                    </div>
+                    <ArrowRight size={18} className="text-gigpay-text-muted" />
+                </div>
+            </Card>
 
             {/* ═══════════════════════════════════════════════════
                 Forecast Earnings Section
@@ -301,6 +322,7 @@ const Insights = () => {
                     <h2 className="text-heading-md flex items-center gap-2">
                         <Lightbulb size={20} className="text-[#FFD166]" fill="#FFD166" /> Algorithmic Hacks
                     </h2>
+                    <Button variant="ghost" size="ghost" className="pe-0" onClick={() => navigate('/insights/algo')}>See All <ArrowRight size={16} className="ml-1" /></Button>
                 </div>
 
                 <div className="flex flex-col gap-3">

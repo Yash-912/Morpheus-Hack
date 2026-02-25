@@ -11,8 +11,8 @@ const USE_REDIS = REDIS_URL && !REDIS_URL.includes('mock') && REDIS_URL.startsWi
 // ---- In-memory mock for dev (no Redis needed) ----
 class MemoryRedis {
   constructor() { this._store = new Map(); this._ttls = new Map(); }
-  async connect() {}
-  async quit() {}
+  async connect() { }
+  async quit() { }
   async get(k) { if (this._ttls.has(k) && Date.now() > this._ttls.get(k)) { this._store.delete(k); this._ttls.delete(k); return null; } return this._store.get(k) || null; }
   async set(k, v, ...args) { this._store.set(k, v); if (args[0] === 'EX') this._ttls.set(k, Date.now() + args[1] * 1000); return 'OK'; }
   async setex(k, ttl, v) { this._store.set(k, v); this._ttls.set(k, Date.now() + ttl * 1000); return 'OK'; }
@@ -24,7 +24,7 @@ class MemoryRedis {
   async lpush(k, ...vals) { const arr = JSON.parse(this._store.get(k) || '[]'); arr.unshift(...vals); this._store.set(k, JSON.stringify(arr)); return arr.length; }
   async lrange(k, s, e) { const arr = JSON.parse(this._store.get(k) || '[]'); return arr.slice(s, e === -1 ? undefined : e + 1); }
   async ltrim(k, s, e) { const arr = JSON.parse(this._store.get(k) || '[]'); this._store.set(k, JSON.stringify(arr.slice(s, e === -1 ? undefined : e + 1))); return 'OK'; }
-  async hset(k, f, v) { const h = JSON.parse(this._store.get(k) || '{}'); h[f] = v; this._store.set(k, JSON.stringify(h)); return 1; }
+  async hset(k, ...fieldValues) { const h = JSON.parse(this._store.get(k) || '{}'); for (let i = 0; i < fieldValues.length; i += 2) { h[fieldValues[i]] = fieldValues[i + 1]; } this._store.set(k, JSON.stringify(h)); return Math.floor(fieldValues.length / 2); }
   async hget(k, f) { const h = JSON.parse(this._store.get(k) || '{}'); return h[f] || null; }
   async hgetall(k) { return JSON.parse(this._store.get(k) || '{}'); }
   async hincrby(k, f, inc) { const h = JSON.parse(this._store.get(k) || '{}'); h[f] = (Number(h[f]) || 0) + inc; this._store.set(k, JSON.stringify(h)); return h[f]; }
@@ -37,15 +37,15 @@ class MemoryRedis {
     const self = this;
     const cmds = [];
     const chain = {
-      incr(k)    { cmds.push(['incr', k]); return chain; },
-      decr(k)    { cmds.push(['decr', k]); return chain; },
-      pttl(k)    { cmds.push(['pttl', k]); return chain; },
+      incr(k) { cmds.push(['incr', k]); return chain; },
+      decr(k) { cmds.push(['decr', k]); return chain; },
+      pttl(k) { cmds.push(['pttl', k]); return chain; },
       pexpire(k, ms) { cmds.push(['pexpire', k, ms]); return chain; },
-      get(k)     { cmds.push(['get', k]); return chain; },
-      set(...a)  { cmds.push(['set', ...a]); return chain; },
-      del(...a)  { cmds.push(['del', ...a]); return chain; },
+      get(k) { cmds.push(['get', k]); return chain; },
+      set(...a) { cmds.push(['set', ...a]); return chain; },
+      del(...a) { cmds.push(['del', ...a]); return chain; },
       expire(k, s) { cmds.push(['expire', k, s]); return chain; },
-      hset(k, f, v) { cmds.push(['hset', k, f, v]); return chain; },
+      hset(k, ...fv) { cmds.push(['hset', k, ...fv]); return chain; },
       hget(k, f) { cmds.push(['hget', k, f]); return chain; },
       setex(k, ttl, v) { cmds.push(['setex', k, ttl, v]); return chain; },
       async exec() {

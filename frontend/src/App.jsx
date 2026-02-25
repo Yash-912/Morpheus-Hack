@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 
@@ -14,7 +14,24 @@ import PostJob from './pages/PostJob';
 import JobDetail from './pages/JobDetail';
 import Loans from './pages/Loans';
 import Savings from './pages/Savings';
+import NotFound from './pages/NotFound';
 import { ProtectedRoute } from './components/shared/ProtectedRoute';
+
+// Step 7 — Wallet sub-pages
+import Transactions from './pages/Wallet/Transactions';
+import Insurance from './pages/Wallet/Insurance';
+
+// Step 8 — Insights sub-pages
+import AlgoInsights from './pages/Insights/AlgoInsights';
+import Tax from './pages/Insights/Tax';
+
+// Step 9 — Community sub-pages
+import MyJobs from './pages/Community/MyJobs';
+import WorkerProfile from './pages/Community/WorkerProfile';
+
+// Step 10 — Profile sub-pages
+import LinkedAccounts from './pages/Profile/LinkedAccounts';
+import Support from './pages/Profile/Support';
 
 // Onboarding Pages
 import Landing from './pages/Onboarding/Landing';
@@ -58,16 +75,24 @@ function App() {
                 <Route element={<AppLayout />}>
                   <Route path="/" element={<Home />} />
                   <Route path="/wallet" element={<Wallet />} />
+                  <Route path="/wallet/transactions" element={<Transactions />} />
+                  <Route path="/wallet/insurance" element={<Insurance />} />
                   <Route path="/cashout" element={<Cashout />} />
                   <Route path="/insights" element={<Insights />} />
+                  <Route path="/insights/algo" element={<AlgoInsights />} />
+                  <Route path="/insights/tax" element={<Tax />} />
                   <Route path="/community" element={<Community />} />
+                  <Route path="/community/my-jobs" element={<MyJobs />} />
+                  <Route path="/community/worker/:workerId" element={<WorkerProfile />} />
                   <Route path="/community/:id" element={<JobDetail />} />
                   <Route path="/post-job" element={<PostJob />} />
                   <Route path="/loans" element={<Loans />} />
                   <Route path="/savings" element={<Savings />} />
                   <Route path="/profile" element={<Profile />} />
+                  <Route path="/profile/linked-accounts" element={<LinkedAccounts />} />
+                  <Route path="/profile/support" element={<Support />} />
                   <Route path="/zones" element={<Zones />} />
-                  <Route path="*" element={<Navigate to="/" replace />} />
+                  <Route path="*" element={<NotFound />} />
                 </Route>
               </Route>
             </Routes>

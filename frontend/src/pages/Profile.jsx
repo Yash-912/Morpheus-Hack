@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { ShieldCheck, LogOut, ChevronRight, User, Settings, HelpCircle, Star } from 'lucide-react';
+import { ShieldCheck, LogOut, ChevronRight, User, Settings, HelpCircle, Star, Link2 } from 'lucide-react';
 
 const Profile = () => {
     const { user, logout } = useAuth();
@@ -80,17 +80,24 @@ const Profile = () => {
                 </h3>
 
                 <Card className="p-0 overflow-hidden divide-y rounded-2xl">
-                    <button className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors">
+                    <button onClick={() => navigate('/profile/linked-accounts')} className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-3 text-gigpay-navy font-dm-sans font-medium">
-                            <Settings size={20} className="text-gigpay-text-muted" />
-                            App Preferences
+                            <Link2 size={20} className="text-gigpay-text-muted" />
+                            Linked Accounts
+                        </div>
+                        <ChevronRight size={20} className="text-gigpay-text-muted" />
+                    </button>
+                    <button onClick={() => navigate('/profile/support')} className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors">
+                        <div className="flex items-center gap-3 text-gigpay-navy font-dm-sans font-medium">
+                            <HelpCircle size={20} className="text-gigpay-text-muted" />
+                            Help & Support
                         </div>
                         <ChevronRight size={20} className="text-gigpay-text-muted" />
                     </button>
                     <button className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-3 text-gigpay-navy font-dm-sans font-medium">
-                            <HelpCircle size={20} className="text-gigpay-text-muted" />
-                            Help & Support
+                            <Settings size={20} className="text-gigpay-text-muted" />
+                            App Preferences
                         </div>
                         <ChevronRight size={20} className="text-gigpay-text-muted" />
                     </button>
