@@ -8,7 +8,10 @@ const validate = require('../middleware/validate.middleware');
 const authMiddleware = require('../middleware/auth.middleware');
 const userController = require('../controllers/user.controller');
 
-// All user routes require authentication
+// GET /api/users/by-phone (INTERNAL — bot uses x-bot-secret, no JWT needed)
+router.get('/by-phone', userController.getByPhone);
+
+// All routes below require JWT authentication
 router.use(authMiddleware);
 
 // GET /api/users/profile

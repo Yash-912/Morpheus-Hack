@@ -2,7 +2,7 @@ import { usePayouts } from '../hooks/usePayouts';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { ArrowRight, History, ArrowUpRight, ArrowDownLeft, ShieldCheck, PiggyBank, Zap } from 'lucide-react';
+import { ArrowRight, History, ArrowUpRight, ArrowDownLeft, ShieldCheck, PiggyBank, Zap, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/ui.store';
 import { useEffect } from 'react';
@@ -68,20 +68,27 @@ const Wallet = () => {
             </Card>
 
             {/* Financial Services */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-3">
                 <div onClick={() => navigate('/loans')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
                     <div className="w-10 h-10 rounded-full bg-[#FFD166]/20 text-[#FFD166] flex items-center justify-center mb-2">
                         <Zap size={20} className="fill-current" />
                     </div>
                     <h4 className="font-bold text-gigpay-navy text-sm">Gig Loans</h4>
-                    <p className="text-xs text-gigpay-text-secondary mt-1">0% Cash Advance</p>
+                    <p className="text-xs text-gigpay-text-secondary mt-1">0% Advance</p>
                 </div>
                 <div onClick={() => navigate('/savings')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
                     <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mb-2">
                         <PiggyBank size={20} />
                     </div>
                     <h4 className="font-bold text-gigpay-navy text-sm">Savings</h4>
-                    <p className="text-xs text-gigpay-text-secondary mt-1">Auto-stashing</p>
+                    <p className="text-xs text-gigpay-text-secondary mt-1">Auto-stash</p>
+                </div>
+                <div onClick={() => navigate('/wallet/insurance')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mb-2">
+                        <Shield size={20} />
+                    </div>
+                    <h4 className="font-bold text-gigpay-navy text-sm">Insurance</h4>
+                    <p className="text-xs text-gigpay-text-secondary mt-1">₹1/day</p>
                 </div>
             </div>
 
@@ -97,7 +104,7 @@ const Wallet = () => {
             <section>
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-heading-md">Recent Activity</h3>
-                    <Button variant="ghost" size="sm" className="text-gigpay-navy font-bold flex items-center gap-1">
+                    <Button variant="ghost" size="sm" className="text-gigpay-navy font-bold flex items-center gap-1" onClick={() => navigate('/wallet/transactions')}>
                         <History size={16} /> View All
                     </Button>
                 </div>

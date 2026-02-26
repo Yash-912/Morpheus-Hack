@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/auth.store';
 // Create a configured Axios instance
 const api = axios.create({
     // Use VITE_API_URL from .env or default to localhost
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5001/api',
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
     headers: {
         'Content-Type': 'application/json',
     },

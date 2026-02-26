@@ -101,7 +101,7 @@ const payoutLimiter = rateLimit({
  */
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  max: process.env.NODE_ENV === 'development' ? 1000 : 100,
   keyGenerator: (req) => `general:${req.ip}`,
   store: new RedisStore(15 * 60 * 1000),
   standardHeaders: true,
