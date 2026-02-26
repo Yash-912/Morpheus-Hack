@@ -80,7 +80,7 @@ services:
     env_file:
       - ./whatsapp-bot/.env
     environment:
-      - GIGPAY_API_URL=http://backend:5000
+      - GIGPAY_API_URL=http://backend:5002
     networks:
       - gigpay-network
     restart: always

@@ -35,7 +35,7 @@ services:
     command: redis-server --appendonly yes
 
   # ============================================================
-  # Backend API — Node.js/Express (Port 5000)
+  # Backend API — Node.js/Express (Port 5002)
   # ============================================================
   backend:
     build:
@@ -43,7 +43,7 @@ services:
       dockerfile: Dockerfile
     container_name: gigpay-backend
     ports:
-      - "5000:5000"
+      - "5002:5002"
     env_file:
       - ./backend/.env
     environment:
@@ -99,7 +99,7 @@ services:
     env_file:
       - ./whatsapp-bot/.env
     environment:
-      - GIGPAY_API_URL=http://backend:5000
+      - GIGPAY_API_URL=http://backend:5002
       - REDIS_URL=redis://redis:6379
     volumes:
       - ./whatsapp-bot:/app
