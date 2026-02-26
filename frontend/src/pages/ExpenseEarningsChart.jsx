@@ -9,13 +9,45 @@ import {
 } from 'lucide-react';
 import api from '../services/api.service';
 
-// ── Realistic Mumbai delivery worker SMS (matching Jan-Feb 2026 earnings period) ─
-const DEMO_SMS = [
+// ── Realistic Mumbai delivery worker SMS pool (24 messages across all expense categories) ─
+const SMS_POOL = [
+    // ── Fuel (6) ──
     { body: 'Rs.450 debited at HP PETROL PUMP via UPI on 12-Jan', timestamp: '2026-01-12T10:30:00' },
+    { body: '₹520 paid to IOCL FUEL STATION Andheri via UPI', timestamp: '2026-01-18T08:15:00' },
+    { body: 'Rs.380 debited at NAYARA ENERGY PUMP Bandra', timestamp: '2026-01-25T09:00:00' },
+    { body: '₹610 paid to BPCL PETROL PUMP Dadar via UPI', timestamp: '2026-02-03T07:45:00' },
+    { body: 'Rs.475 debited at SHELL PETROL PUMP Powai', timestamp: '2026-02-10T08:30:00' },
+    { body: '₹550 paid to HP PETROLEUM Goregaon via UPI on 19-Feb', timestamp: '2026-02-19T09:20:00' },
+    // ── Toll (4) ──
     { body: 'FASTag: Rs.85 deducted at WESTERN EXPRESS HIGHWAY toll', timestamp: '2026-01-20T07:30:00' },
+    { body: 'FASTag: ₹45 deducted at BANDRA WORLI SEALINK toll plaza', timestamp: '2026-01-28T06:50:00' },
+    { body: 'FASTag: Rs.35 deducted at AIROLI BRIDGE toll plaza', timestamp: '2026-02-08T07:10:00' },
+    { body: 'NETC FASTag: ₹65 deducted at VASHI BRIDGE toll', timestamp: '2026-02-15T18:40:00' },
+    // ── Maintenance (4) ──
     { body: 'Rs.1200 paid to HERO HONDA SERVICE CENTER via UPI on 05-Feb', timestamp: '2026-02-05T11:30:00' },
+    { body: '₹350 paid to PUNCTURE REPAIR WORKSHOP Kurla via UPI', timestamp: '2026-01-15T14:20:00' },
+    { body: 'Rs.2500 debited at BAJAJ AUTO SERVICE GARAGE Thane', timestamp: '2026-02-12T10:00:00' },
+    { body: '₹800 paid to TVS SERVICING CENTER Malad via UPI', timestamp: '2026-02-20T13:00:00' },
+    // ── Food (4) ──
+    { body: '₹120 paid to SHARMA DHABA Andheri via UPI', timestamp: '2026-01-14T13:30:00' },
+    { body: 'Rs.90 debited at MUMBAI CAFE Bandra for food', timestamp: '2026-01-22T12:45:00' },
+    { body: '₹150 paid to DOMINOS PIZZA Powai via UPI', timestamp: '2026-02-01T20:00:00' },
+    { body: 'Rs.65 debited at CHAI POINT Kurla via UPI on 14-Feb', timestamp: '2026-02-14T16:30:00' },
+    // ── Mobile Recharge (3) ──
     { body: 'Rs.299 debited for Jio recharge, validity 28 days. -JioCare', timestamp: '2026-02-18T10:00:00' },
+    { body: '₹239 debited for Airtel prepaid recharge, validity 28 days', timestamp: '2026-01-10T09:00:00' },
+    { body: 'Rs.179 debited for Vi recharge plan, validity 24 days', timestamp: '2026-02-06T11:15:00' },
+    // ── Parking (3) ──
+    { body: '₹30 paid for parking at ANDHERI STATION PARKING lot', timestamp: '2026-01-16T08:00:00' },
+    { body: 'Rs.50 debited at BANDRA KURLA COMPLEX PARKING via UPI', timestamp: '2026-02-09T10:45:00' },
+    { body: '₹40 paid for parking at DADAR STATION PARKING lot', timestamp: '2026-02-22T07:30:00' },
 ];
+
+// Pick N random unique SMS from the pool
+function pickRandomSms(n = 3) {
+    const shuffled = [...SMS_POOL].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, n);
+}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -127,7 +159,7 @@ export default function ExpenseEarningsChart() {
         setSimulating(true);
         setToast(null);
         try {
-            const res = await api.post('/expenses/sms-batch', { messages: DEMO_SMS });
+            const res = await api.post('/expenses/sms-batch', { messages: pickRandomSms(3) });
             const created = res.data?.data?.created || 0;
             setToast({ type: 'success', msg: `${created} SMS expenses imported successfully` });
             fetchData();
