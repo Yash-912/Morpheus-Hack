@@ -60,9 +60,9 @@ settlementQueue.process(async (job) => {
 
         // Attempt to verify settlement via platform API
         const settlementStatus = await PlatformService.checkSettlementStatus(
-          payout.platform,
+          'generic',
           platformAccount.accessToken,
-          payout.externalId
+          payout.razorpayPayoutId
         );
 
         if (settlementStatus?.settled) {
@@ -71,15 +71,14 @@ settlementQueue.process(async (job) => {
             where: { id: payout.id },
             data: {
               settledAt: new Date(),
-              settlementRefId: settlementStatus.referenceId || null,
             },
           });
 
-          // Update revolving credit pool — the platform has released funds
-          await prisma.wallet.update({
-            where: { userId: payout.userId },
+          // Update wallet — the platform has released funds
+          await prisma.user.update({
+            where: { id: payout.userId },
             data: {
-              revolvingCredit: { decrement: payout.amount },
+              walletLifetimeWithdrawn: { increment: payout.amount },
             },
           });
 
@@ -90,7 +89,7 @@ settlementQueue.process(async (job) => {
           await prisma.payout.update({
             where: { id: payout.id },
             data: {
-              settlementNotes: `Settlement failed: ${settlementStatus.reason || 'Unknown'}`,
+              failureReason: `Settlement failed: ${settlementStatus.reason || 'Unknown'}`,
             },
           });
           discrepancies++;

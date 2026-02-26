@@ -252,7 +252,7 @@ const authController = {
 
       // Liveness check
       const liveness = await BiometricService.livenessCheck(req.file.buffer);
-      if (!liveness.isLive) {
+      if (!liveness.alive) {
         return res.status(400).json({
           success: false,
           error: { code: 'LIVENESS_FAILED', message: 'Liveness check failed. Please use a live photo.' },

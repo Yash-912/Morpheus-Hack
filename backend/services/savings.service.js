@@ -12,13 +12,13 @@ const SAVINGS_API_KEY = process.env.SAVINGS_API_KEY;
 
 const savingsClient = SAVINGS_API_KEY
   ? axios.create({
-      baseURL: SAVINGS_API_URL,
-      timeout: 15000,
-      headers: {
-        Authorization: `Bearer ${SAVINGS_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    baseURL: SAVINGS_API_URL,
+    timeout: 15000,
+    headers: {
+      Authorization: `Bearer ${SAVINGS_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  })
   : null;
 
 const SavingsService = {
@@ -56,11 +56,11 @@ const SavingsService = {
       data: {
         userId,
         goalName: data.name,
-        targetAmount: BigInt(data.targetAmount),
+        type: 'goal_based',
+        goalAmount: BigInt(data.targetAmount),
         currentAmount: BigInt(0),
         autoSavePercent: data.autoSavePercent,
-        isActive: true,
-        externalFundId,
+        status: 'active',
       },
     });
 
@@ -87,16 +87,16 @@ const SavingsService = {
       throw error;
     }
 
-    if (!saving.isActive) {
+    if (saving.status !== 'active') {
       const error = new Error('Savings goal is paused');
       error.statusCode = 400;
       throw error;
     }
 
     // Deposit to external fund
-    if (savingsClient && saving.externalFundId) {
+    if (savingsClient && saving.partnerFolioId) {
       try {
-        await savingsClient.post(`/funds/${saving.externalFundId}/deposit`, {
+        await savingsClient.post(`/funds/${saving.partnerFolioId}/deposit`, {
           amount_paise: amount,
         });
       } catch (error) {
@@ -112,7 +112,7 @@ const SavingsService = {
       data: { currentAmount: BigInt(newBalance) },
     });
 
-    const target = Number(saving.targetAmount);
+    const target = Number(saving.goalAmount || 0);
     const progress = target > 0 ? Math.min(100, Math.round((newBalance / target) * 100)) : 0;
 
     logger.info('Savings deposit processed', {
@@ -149,9 +149,9 @@ const SavingsService = {
     }
 
     // Redeem from external fund
-    if (savingsClient && saving.externalFundId) {
+    if (savingsClient && saving.partnerFolioId) {
       try {
-        await savingsClient.post(`/funds/${saving.externalFundId}/redeem`, {
+        await savingsClient.post(`/funds/${saving.partnerFolioId}/redeem`, {
           amount_paise: amount,
         });
       } catch (error) {
@@ -188,7 +188,7 @@ const SavingsService = {
   async processRoundUp(userId, payoutAmount) {
     // Find active savings goal with auto-save enabled
     const saving = await prisma.saving.findFirst({
-      where: { userId, isActive: true },
+      where: { userId, status: 'active' },
       orderBy: { createdAt: 'asc' }, // Oldest goal first
     });
 

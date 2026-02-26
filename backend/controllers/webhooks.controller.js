@@ -69,17 +69,16 @@ const webhooksController = {
             data: {
               status: 'completed',
               completedAt: new Date(),
-              externalId: razorpayPayoutId,
+              razorpayPayoutId: razorpayPayoutId,
             },
           });
 
           // Notify user
-          await NotificationService.send(payout.userId, {
-            type: 'payout_success',
+          await NotificationService.sendNotification(payout.userId, {
+            type: 'payout',
             title: 'Payout Successful',
             body: `₹${(Number(payout.amount) / 100).toFixed(2)} has been sent to your account.`,
-            channel: ['push', 'in_app'],
-          });
+          }, ['push', 'in_app']);
 
           logger.info('Payout completed', { payoutId: payout.id });
           break;
@@ -90,21 +89,20 @@ const webhooksController = {
           await prisma.$transaction(async (tx) => {
             await tx.payout.update({
               where: { id: payout.id },
-              data: { status: 'reversed', externalId: razorpayPayoutId },
+              data: { status: 'reversed', razorpayPayoutId: razorpayPayoutId },
             });
 
-            await tx.wallet.update({
-              where: { userId: payout.userId },
-              data: { balance: { increment: payout.amount } },
+            await tx.user.update({
+              where: { id: payout.userId },
+              data: { walletBalance: { increment: payout.amount } },
             });
           });
 
-          await NotificationService.send(payout.userId, {
-            type: 'payout_reversed',
+          await NotificationService.sendNotification(payout.userId, {
+            type: 'payout',
             title: 'Payout Reversed',
             body: `₹${(Number(payout.amount) / 100).toFixed(2)} payout was reversed. Amount refunded to wallet.`,
-            channel: ['push', 'in_app'],
-          });
+          }, ['push', 'in_app']);
 
           logger.warn('Payout reversed', { payoutId: payout.id });
           break;
@@ -118,22 +116,21 @@ const webhooksController = {
               data: {
                 status: 'failed',
                 failureReason: payoutEntity.failure_reason || 'Unknown failure',
-                externalId: razorpayPayoutId,
+                razorpayPayoutId: razorpayPayoutId,
               },
             });
 
-            await tx.wallet.update({
-              where: { userId: payout.userId },
-              data: { balance: { increment: payout.amount } },
+            await tx.user.update({
+              where: { id: payout.userId },
+              data: { walletBalance: { increment: payout.amount } },
             });
           });
 
-          await NotificationService.send(payout.userId, {
-            type: 'payout_failed',
+          await NotificationService.sendNotification(payout.userId, {
+            type: 'payout',
             title: 'Payout Failed',
             body: `Payout of ₹${(Number(payout.amount) / 100).toFixed(2)} failed. Amount refunded to wallet.`,
-            channel: ['push', 'in_app'],
-          });
+          }, ['push', 'in_app']);
 
           logger.error('Payout failed', {
             payoutId: payout.id,
@@ -212,8 +209,8 @@ const webhooksController = {
             // 1. Publish to a Redis queue for the WhatsApp bot microservice
             // 2. Make an HTTP call to the bot service
             try {
-              const redis = require('../config/redis');
-              await redis.publish('whatsapp:incoming', JSON.stringify({
+              const { redisClient } = require('../config/redis');
+              await redisClient.publish('whatsapp:incoming', JSON.stringify({
                 phone: senderPhone,
                 body: messageBody,
                 type: messageType,

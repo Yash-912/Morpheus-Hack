@@ -55,12 +55,40 @@ async def _load_models():
     )
 
 
+# ── APScheduler — zone clustering cron (every 5 min) ───────────
+from apscheduler.schedulers.asyncio import AsyncIOScheduler  # noqa: E402
+from zone_clustering import run_clustering                    # noqa: E402
+
+scheduler = AsyncIOScheduler()
+
+
+@app.on_event("startup")
+async def _start_scheduler():
+    scheduler.add_job(run_clustering, "interval", minutes=5, id="zone_clustering")
+    scheduler.start()
+    logger.info("APScheduler started — zone clustering every 5 min")
+    # Run once immediately so cache is warm
+    try:
+        run_clustering()
+    except Exception as exc:
+        logger.warning("Initial clustering failed (non-fatal): %s", exc)
+
+
+@app.on_event("shutdown")
+async def _stop_scheduler():
+    scheduler.shutdown(wait=False)
+
+
 # ── Routers ─────────────────────────────────────────────────────
 from routers.predict import router as predict_router        # noqa: E402
 from routers.sms_classify import router as sms_router       # noqa: E402
+from routers.insights import router as insights_router      # noqa: E402
+from routers.zones import router as zones_router            # noqa: E402
 
 app.include_router(predict_router)
 app.include_router(sms_router)
+app.include_router(insights_router)
+app.include_router(zones_router)
 
 
 # ── Health check ────────────────────────────────────────────────

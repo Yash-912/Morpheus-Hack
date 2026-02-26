@@ -20,3 +20,10 @@ python-multipart>=0.0.9
 
 # Environment
 python-dotenv>=1.0.1
+
+# LLM (OpenRouter via OpenAI SDK)
+openai>=1.0.0
+
+# Database (direct SQL queries for insights)
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.0

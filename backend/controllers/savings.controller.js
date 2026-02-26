@@ -12,17 +12,17 @@ const savingsController = {
    */
   async list(req, res, next) {
     try {
-      const goals = await prisma.savingsGoal.findMany({
+      const goals = await prisma.saving.findMany({
         where: { userId: req.user.id },
         orderBy: { createdAt: 'desc' },
       });
 
       const data = goals.map((g) => ({
         ...g,
-        targetAmount: Number(g.targetAmount),
+        targetAmount: Number(g.goalAmount || 0),
         currentAmount: Number(g.currentAmount),
-        progress: g.targetAmount > 0
-          ? Math.round((Number(g.currentAmount) / Number(g.targetAmount)) * 100)
+        progress: g.goalAmount > 0
+          ? Math.round((Number(g.currentAmount) / Number(g.goalAmount)) * 100)
           : 0,
       }));
 
@@ -39,14 +39,14 @@ const savingsController = {
     try {
       const { name, targetAmount, autoSavePercent } = req.body;
 
-      const goal = await prisma.savingsGoal.create({
+      const goal = await prisma.saving.create({
         data: {
           userId: req.user.id,
-          name,
-          targetAmount: BigInt(targetAmount),
+          goalName: name,
+          type: 'goal_based',
+          goalAmount: BigInt(targetAmount),
           currentAmount: BigInt(0),
           autoSavePercent: autoSavePercent || 0,
-          autoSaveEnabled: !!autoSavePercent,
           status: 'active',
         },
       });
@@ -55,7 +55,7 @@ const savingsController = {
         success: true,
         data: {
           ...goal,
-          targetAmount: Number(goal.targetAmount),
+          targetAmount: Number(goal.goalAmount),
           currentAmount: Number(goal.currentAmount),
         },
       });
@@ -73,7 +73,7 @@ const savingsController = {
       const { amount } = req.body;
       const goalId = req.params.id;
 
-      const goal = await prisma.savingsGoal.findFirst({
+      const goal = await prisma.saving.findFirst({
         where: { id: goalId, userId: req.user.id },
       });
 
@@ -85,8 +85,11 @@ const savingsController = {
       }
 
       // Check wallet balance
-      const wallet = await prisma.wallet.findUnique({ where: { userId: req.user.id } });
-      if (!wallet || Number(wallet.balance) < amount) {
+      const user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { walletBalance: true },
+      });
+      if (!user || Number(user.walletBalance) < amount) {
         return res.status(400).json({
           success: false,
           error: { code: 'INSUFFICIENT_BALANCE', message: 'Not enough wallet balance' },
@@ -95,21 +98,21 @@ const savingsController = {
 
       // Atomic: deduct wallet + credit goal
       const updated = await prisma.$transaction(async (tx) => {
-        await tx.wallet.update({
-          where: { userId: req.user.id },
-          data: { balance: { decrement: BigInt(amount) } },
+        await tx.user.update({
+          where: { id: req.user.id },
+          data: { walletBalance: { decrement: BigInt(amount) } },
         });
 
-        return tx.savingsGoal.update({
+        return tx.saving.update({
           where: { id: goalId },
           data: { currentAmount: { increment: BigInt(amount) } },
         });
       });
 
       // Check if goal completed
-      const isCompleted = Number(updated.currentAmount) >= Number(updated.targetAmount);
+      const isCompleted = updated.goalAmount && Number(updated.currentAmount) >= Number(updated.goalAmount);
       if (isCompleted && updated.status !== 'completed') {
-        await prisma.savingsGoal.update({
+        await prisma.saving.update({
           where: { id: goalId },
           data: { status: 'completed' },
         });
@@ -121,7 +124,7 @@ const savingsController = {
         success: true,
         data: {
           ...updated,
-          targetAmount: Number(updated.targetAmount),
+          targetAmount: Number(updated.goalAmount || 0),
           currentAmount: Number(updated.currentAmount),
           isCompleted,
         },
@@ -140,7 +143,7 @@ const savingsController = {
       const { amount } = req.body;
       const goalId = req.params.id;
 
-      const goal = await prisma.savingsGoal.findFirst({
+      const goal = await prisma.saving.findFirst({
         where: { id: goalId, userId: req.user.id },
       });
 
@@ -160,14 +163,14 @@ const savingsController = {
 
       // Atomic: decrement goal + credit wallet
       const updated = await prisma.$transaction(async (tx) => {
-        const g = await tx.savingsGoal.update({
+        const g = await tx.saving.update({
           where: { id: goalId },
           data: { currentAmount: { decrement: BigInt(amount) } },
         });
 
-        await tx.wallet.update({
-          where: { userId: req.user.id },
-          data: { balance: { increment: BigInt(amount) } },
+        await tx.user.update({
+          where: { id: req.user.id },
+          data: { walletBalance: { increment: BigInt(amount) } },
         });
 
         return g;
@@ -179,7 +182,7 @@ const savingsController = {
         success: true,
         data: {
           ...updated,
-          targetAmount: Number(updated.targetAmount),
+          targetAmount: Number(updated.goalAmount || 0),
           currentAmount: Number(updated.currentAmount),
         },
       });
@@ -196,7 +199,7 @@ const savingsController = {
     try {
       const goalId = req.params.id;
 
-      const goal = await prisma.savingsGoal.findFirst({
+      const goal = await prisma.saving.findFirst({
         where: { id: goalId, userId: req.user.id },
       });
 
@@ -207,16 +210,17 @@ const savingsController = {
         });
       }
 
-      const updated = await prisma.savingsGoal.update({
+      const newStatus = goal.status === 'active' ? 'paused' : 'active';
+      const updated = await prisma.saving.update({
         where: { id: goalId },
-        data: { autoSaveEnabled: !goal.autoSaveEnabled },
+        data: { status: newStatus },
       });
 
       res.json({
         success: true,
         data: {
           ...updated,
-          targetAmount: Number(updated.targetAmount),
+          targetAmount: Number(updated.goalAmount || 0),
           currentAmount: Number(updated.currentAmount),
         },
       });

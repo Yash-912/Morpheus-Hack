@@ -49,7 +49,7 @@ smsProcessingQueue.process(3, async (job) => {
             amount: BigInt(item.amount),
             merchant: item.merchant || undefined,
             date: item.date ? new Date(item.date) : undefined,
-            source: 'sms',
+            source: 'sms_auto',
           },
         });
 
@@ -65,13 +65,13 @@ smsProcessingQueue.process(3, async (job) => {
             userId,
             category: item.category,
             amount: BigInt(item.amount),
-            description: item.merchant
+            notes: item.merchant
               ? `Payment to ${item.merchant}`
               : 'Auto-detected from SMS',
             merchant: item.merchant || null,
             date: item.date ? new Date(item.date) : new Date(),
-            source: 'sms',
-            taxDeductible: catMeta?.taxDeductible || item.is_tax_deductible || false,
+            source: 'sms_auto',
+            isTaxDeductible: catMeta?.taxDeductible || item.is_tax_deductible || false,
           },
         });
 

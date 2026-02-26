@@ -64,7 +64,7 @@ const FraudService = {
     const payouts = await prisma.payout.findMany({
       where: {
         userId,
-        status: 'processed',
+        status: 'completed',
         createdAt: { gte: thirtyDaysAgo },
       },
       select: { amount: true },
@@ -94,38 +94,22 @@ const FraudService = {
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { primaryCity: true },
+      select: { city: true, homeLat: true, homeLng: true },
     });
 
-    if (!user?.primaryCity) return null;
+    if (!user?.city) return null;
 
-    // Get recent payout locations from earnings data
-    const recentEarnings = await prisma.earning.findMany({
-      where: { userId },
-      orderBy: { date: 'desc' },
-      take: 10,
-      select: { metadata: true },
-    });
+    // If we have a home location, check distance from there
+    if (user.homeLat && user.homeLng) {
+      const distance = haversineDistance(location.lat, location.lng, user.homeLat, user.homeLng);
 
-    // Extract locations from metadata
-    const recentLocations = recentEarnings
-      .filter((e) => e.metadata?.lat && e.metadata?.lng)
-      .map((e) => ({ lat: e.metadata.lat, lng: e.metadata.lng }));
-
-    if (recentLocations.length === 0) return null;
-
-    // Average recent location as "usual zone"
-    const avgLat = recentLocations.reduce((s, l) => s + l.lat, 0) / recentLocations.length;
-    const avgLng = recentLocations.reduce((s, l) => s + l.lng, 0) / recentLocations.length;
-
-    const distance = haversineDistance(location.lat, location.lng, avgLat, avgLng);
-
-    if (distance > 50) {
-      return {
-        flagged: true,
-        blocked: false,
-        reason: `Payout requested ${Math.round(distance)} km from your usual zone`,
-      };
+      if (distance > 50) {
+        return {
+          flagged: true,
+          blocked: false,
+          reason: `Payout requested ${Math.round(distance)} km from your usual zone`,
+        };
+      }
     }
 
     return null;
@@ -160,12 +144,14 @@ const FraudService = {
     if (!deviceFingerprint) return null;
 
     const deviceKey = DEVICE_KEY(userId);
-    const isKnownDevice = await redisClient.sismember(deviceKey, deviceFingerprint);
+    const knownDevices = await redisClient.get(deviceKey);
+    const deviceList = knownDevices ? JSON.parse(knownDevices) : [];
+    const isKnownDevice = deviceList.includes(deviceFingerprint);
 
     if (!isKnownDevice) {
       // Register the device
-      await redisClient.sadd(deviceKey, deviceFingerprint);
-      await redisClient.expire(deviceKey, 90 * 24 * 60 * 60); // 90 days
+      deviceList.push(deviceFingerprint);
+      await redisClient.set(deviceKey, JSON.stringify(deviceList), 'EX', 90 * 24 * 60 * 60);
 
       // Check if amount exceeds threshold for new devices
       if (amount > 100000) {

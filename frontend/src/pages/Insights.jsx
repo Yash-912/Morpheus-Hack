@@ -252,7 +252,7 @@ const Insights = () => {
                                             {(forecast.confidence * 100).toFixed(0)}% confidence
                                         </Badge>
                                         <span className="text-caption text-gigpay-text-secondary">
-                                            ≈ ₹{(forecast.predicted_earnings_paise / 100).toFixed(0)} paise-based
+                                            ≈ ₹{Math.round(forecast.predicted_earnings_rupees)} per day
                                         </span>
                                     </div>
                                 </div>

@@ -18,13 +18,13 @@ const NBFC_API_KEY = process.env.NBFC_API_KEY;
 
 const nbfcClient = NBFC_API_KEY
   ? axios.create({
-      baseURL: NBFC_API_URL,
-      timeout: 15000,
-      headers: {
-        Authorization: `Bearer ${NBFC_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-    })
+    baseURL: NBFC_API_URL,
+    timeout: 15000,
+    headers: {
+      Authorization: `Bearer ${NBFC_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+  })
   : null;
 
 const LoanService = {
@@ -75,7 +75,7 @@ const LoanService = {
     });
 
     if (activeLoan) {
-      const repaidPercent = Number(activeLoan.repaidAmount) / Number(activeLoan.totalRepayable);
+      const repaidPercent = Number(activeLoan.amountRepaid) / Number(activeLoan.totalRepayable);
       if (repaidPercent < 0.5) {
         return {
           eligible: false,
@@ -93,11 +93,11 @@ const LoanService = {
         userId,
         date: { gte: thirtyDaysAgo },
       },
-      _sum: { totalAmount: true },
+      _sum: { netAmount: true },
       _count: true,
     });
 
-    const totalEarnings30d = Number(earningsAgg._sum.totalAmount || 0);
+    const totalEarnings30d = Number(earningsAgg._sum.netAmount || 0);
     const daysWithEarnings = earningsAgg._count || 1;
     const avgDailyPaise = Math.round(totalEarnings30d / Math.max(daysWithEarnings, 1));
     const fiveTimesAvg = avgDailyPaise * 5;
@@ -182,13 +182,13 @@ const LoanService = {
         userId,
         amount: BigInt(amount),
         totalRepayable: BigInt(totalRepayable),
-        repaidAmount: BigInt(0),
+        amountRepaid: BigInt(0),
         interestRate: LOAN_INTEREST_RATE_MONTHLY,
-        repaymentPercent,
+        autoDeductPercent: parseFloat(repaymentPercent),
         status: 'active',
         disbursedAt: new Date(),
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        nbfcLoanId,
+        nbfcReferenceId: nbfcLoanId,
       },
     });
 
@@ -216,16 +216,15 @@ const LoanService = {
       throw error;
     }
 
-    const newRepaid = Number(loan.repaidAmount) + amount;
+    const newRepaid = Number(loan.amountRepaid) + amount;
     const totalRepayable = Number(loan.totalRepayable);
     const isFullyRepaid = newRepaid >= totalRepayable;
 
     await prisma.loan.update({
       where: { id: loanId },
       data: {
-        repaidAmount: BigInt(Math.min(newRepaid, totalRepayable)),
+        amountRepaid: BigInt(Math.min(newRepaid, totalRepayable)),
         status: isFullyRepaid ? 'repaid' : 'active',
-        ...(isFullyRepaid ? { closedAt: new Date() } : {}),
       },
     });
 
@@ -253,7 +252,7 @@ const LoanService = {
     if (!loan || loan.status !== 'active') return false;
 
     const now = new Date();
-    if (now > loan.dueDate && Number(loan.repaidAmount) < Number(loan.totalRepayable)) {
+    if (now > loan.dueDate && Number(loan.amountRepaid) < Number(loan.totalRepayable)) {
       await prisma.loan.update({
         where: { id: loanId },
         data: { status: 'defaulted' },
@@ -262,7 +261,7 @@ const LoanService = {
       logger.warn('Loan defaulted', {
         loanId,
         userId: loan.userId,
-        outstanding: paiseToRupees(Number(loan.totalRepayable) - Number(loan.repaidAmount)),
+        outstanding: paiseToRupees(Number(loan.totalRepayable) - Number(loan.amountRepaid)),
       });
 
       return true;

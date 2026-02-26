@@ -175,8 +175,8 @@ const payoutsController = {
       });
 
       if (activeLoan) {
-        loanDeduction = Math.round(netAmount * (activeLoan.repaymentPercent / 100));
-        const remaining = Number(activeLoan.totalRepayable) - Number(activeLoan.repaidAmount);
+        loanDeduction = Math.round(netAmount * ((activeLoan.autoDeductPercent || 10) / 100));
+        const remaining = Number(activeLoan.totalRepayable) - Number(activeLoan.amountRepaid);
         loanDeduction = Math.min(loanDeduction, remaining);
       }
 
@@ -195,8 +195,6 @@ const payoutsController = {
             netAmount: BigInt(netAmount - loanDeduction),
             type,
             status: 'pending',
-            loanDeduction: BigInt(loanDeduction),
-            fraudFlagged: fraudResult.flagged,
           },
         });
 
@@ -237,7 +235,6 @@ const payoutsController = {
           loanDeduction,
           status: payout.status,
           estimatedTime: type === 'instant' ? '30 seconds' : '1-2 hours',
-          fraudFlagged: fraudResult.flagged,
         },
       });
     } catch (error) {
@@ -268,7 +265,6 @@ const payoutsController = {
           amount: Number(payout.amount),
           fee: Number(payout.fee),
           netAmount: Number(payout.netAmount),
-          loanDeduction: Number(payout.loanDeduction || 0),
         },
       });
     } catch (error) {
@@ -298,7 +294,6 @@ const payoutsController = {
         amount: Number(p.amount),
         fee: Number(p.fee),
         netAmount: Number(p.netAmount),
-        loanDeduction: Number(p.loanDeduction || 0),
       }));
 
       res.json({

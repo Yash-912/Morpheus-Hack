@@ -31,7 +31,8 @@ loanRepaymentQueue.process(async (job) => {
       where: {
         userId,
         status: 'active',
-        autoDeductEnabled: true,
+        autoDeductPercent: { not: null },
+        repaymentMethod: 'auto_deduct',
       },
     });
 
@@ -49,7 +50,7 @@ loanRepaymentQueue.process(async (job) => {
     }
 
     // 3. Calculate remaining balance
-    const remainingBalance = Number(activeLoan.totalRepayable) - Number(activeLoan.repaidAmount);
+    const remainingBalance = Number(activeLoan.totalRepayable) - Number(activeLoan.amountRepaid);
     const actualDeduction = Math.min(deductAmount, remainingBalance);
 
     if (actualDeduction <= 0) {
@@ -59,16 +60,16 @@ loanRepaymentQueue.process(async (job) => {
     // 4. Atomic: deduct from wallet + update loan
     const result = await prisma.$transaction(async (tx) => {
       // Deduct from wallet
-      await tx.wallet.update({
-        where: { userId },
-        data: { balance: { decrement: BigInt(actualDeduction) } },
+      await tx.user.update({
+        where: { id: userId },
+        data: { walletBalance: { decrement: BigInt(actualDeduction) } },
       });
 
       // Update loan repaid amount
       const updatedLoan = await tx.loan.update({
         where: { id: activeLoan.id },
         data: {
-          repaidAmount: { increment: BigInt(actualDeduction) },
+          amountRepaid: { increment: BigInt(actualDeduction) },
         },
       });
 
@@ -77,7 +78,6 @@ loanRepaymentQueue.process(async (job) => {
         data: {
           loanId: activeLoan.id,
           amount: BigInt(actualDeduction),
-          source: 'auto_deduct',
           payoutId,
         },
       });
@@ -86,7 +86,7 @@ loanRepaymentQueue.process(async (job) => {
     });
 
     // 5. Check if loan is fully repaid
-    const totalRepaid = Number(result.repaidAmount);
+    const totalRepaid = Number(result.amountRepaid);
     const totalRepayable = Number(result.totalRepayable);
     const isFullyRepaid = totalRepaid >= totalRepayable;
 
@@ -94,7 +94,7 @@ loanRepaymentQueue.process(async (job) => {
       // Mark loan as repaid
       await prisma.loan.update({
         where: { id: activeLoan.id },
-        data: { status: 'repaid', completedAt: new Date() },
+        data: { status: 'repaid' },
       });
 
       // Send congratulations notification

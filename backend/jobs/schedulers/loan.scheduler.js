@@ -30,7 +30,7 @@ function startLoanScheduler() {
       });
 
       for (const loan of upcomingDue) {
-        const remaining = Number(loan.totalRepayable) - Number(loan.repaidAmount);
+        const remaining = Number(loan.totalRepayable) - Number(loan.amountRepaid);
 
         await notificationQueue.add({
           userId: loan.userId,
@@ -56,7 +56,7 @@ function startLoanScheduler() {
 
       let defaulted = 0;
       for (const loan of overdueLoans) {
-        const repaidPercent = Number(loan.repaidAmount) / Number(loan.totalRepayable);
+        const repaidPercent = Number(loan.amountRepaid) / Number(loan.totalRepayable);
 
         // Grace period: 7 days after due date
         const daysPastDue = Math.floor((now.getTime() - loan.dueDate.getTime()) / (24 * 60 * 60 * 1000));
@@ -82,7 +82,7 @@ function startLoanScheduler() {
           defaulted++;
         } else if (daysPastDue <= 7) {
           // Send overdue reminder
-          const remaining = Number(loan.totalRepayable) - Number(loan.repaidAmount);
+          const remaining = Number(loan.totalRepayable) - Number(loan.amountRepaid);
 
           await notificationQueue.add({
             userId: loan.userId,

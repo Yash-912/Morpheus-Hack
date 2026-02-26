@@ -16,16 +16,12 @@ const insuranceController = {
     try {
       const user = await prisma.user.findUnique({
         where: { id: req.user.id },
-        select: { primaryCity: true, dateOfBirth: true },
+        select: { city: true },
       });
 
-      const age = user?.dateOfBirth
-        ? Math.floor((Date.now() - new Date(user.dateOfBirth).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
-        : 30;
-
       const plans = await InsuranceService.getAvailablePlans({
-        age,
-        city: user?.primaryCity || 'bangalore',
+        age: 30,
+        city: user?.city || 'bangalore',
       });
 
       res.json({ success: true, data: plans });
@@ -46,7 +42,7 @@ const insuranceController = {
 
       const data = policies.map((p) => ({
         ...p,
-        premium: Number(p.premium),
+        premium: Number(p.premiumPaid),
         coverAmount: Number(p.coverAmount),
       }));
 
@@ -69,12 +65,12 @@ const insuranceController = {
         data: {
           userId: req.user.id,
           type,
-          provider: result.provider,
-          policyNumber: result.policyId,
-          premium: BigInt(result.premium),
+          partner: result.provider || 'acko',
+          partnerPolicyId: result.policyId,
+          premiumPaid: BigInt(result.premium),
           coverAmount: BigInt(result.coverAmount),
-          startDate: result.startDate,
-          endDate: result.endDate,
+          validFrom: result.startDate || new Date(),
+          validTo: result.endDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           status: 'active',
         },
       });
@@ -83,7 +79,7 @@ const insuranceController = {
         success: true,
         data: {
           ...policy,
-          premium: Number(policy.premium),
+          premium: Number(policy.premiumPaid),
           coverAmount: Number(policy.coverAmount),
         },
       });
@@ -119,7 +115,7 @@ const insuranceController = {
         documents.push(url);
       }
 
-      const result = await InsuranceService.submitClaim(policy.policyNumber, {
+      const result = await InsuranceService.submitClaim(policy.partnerPolicyId, {
         type,
         description,
         amount,
@@ -150,7 +146,7 @@ const insuranceController = {
 
       const policies = await prisma.insurancePolicy.findMany({
         where: { userId: req.user.id },
-        select: { policyNumber: true },
+        select: { partnerPolicyId: true },
       });
 
       // For now, return from DB. In production, would also check external API.
@@ -166,7 +162,7 @@ const insuranceController = {
 
       const data = claims.map((c) => ({
         ...c,
-        premium: Number(c.premium),
+        premium: Number(c.premiumPaid),
         coverAmount: Number(c.coverAmount),
       }));
 

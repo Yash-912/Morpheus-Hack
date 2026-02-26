@@ -2,11 +2,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { ShieldCheck, LogOut, ChevronRight, User, Settings, HelpCircle, Star, Link2 } from 'lucide-react';
+import { ShieldCheck, LogOut, ChevronRight, User, Settings, HelpCircle, Star, MapPin , Link2  } from 'lucide-react';
+import { useGPSContext } from '../context/GPSContext';
 
 const Profile = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const { isTracking, toggleTracking } = useGPSContext();
 
     const handleLogout = async () => {
         await logout();
@@ -80,7 +82,32 @@ const Profile = () => {
                 </h3>
 
                 <Card className="p-0 overflow-hidden divide-y rounded-2xl">
-                    <button onClick={() => navigate('/profile/linked-accounts')} className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors">
+                    {/* Location Tracking Toggle */}
+                    <button
+                        onClick={toggleTracking}
+                        className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors"
+                    >
+                        <div className="flex items-center gap-3 text-gigpay-navy font-dm-sans font-medium">
+                            <MapPin size={20} className={isTracking ? 'text-blue-500' : 'text-gigpay-text-muted'} />
+                            Location Tracking
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold ${isTracking ? 'text-emerald-600' : 'text-gigpay-text-muted'}`}>
+                                {isTracking ? 'ON' : 'OFF'}
+                            </span>
+                            <div
+                                className={`w-11 h-6 rounded-full relative transition-colors ${isTracking ? 'bg-emerald-500' : 'bg-gray-300'
+                                    }`}
+                            >
+                                <div
+                                    className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-transform ${isTracking ? 'translate-x-[22px]' : 'translate-x-0.5'
+                                        }`}
+                                />
+                            </div>
+                        </div>
+                    </button>
+
+                    <button className="w-full flex items-center justify-between p-4 active:bg-gray-50 transition-colors">
                         <div className="flex items-center gap-3 text-gigpay-navy font-dm-sans font-medium">
                             <Link2 size={20} className="text-gigpay-text-muted" />
                             Linked Accounts

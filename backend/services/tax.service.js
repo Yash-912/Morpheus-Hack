@@ -81,10 +81,10 @@ const TaxService = {
         userId,
         date: { gte: fyStart, lte: fyEnd },
       },
-      _sum: { totalAmount: true },
+      _sum: { netAmount: true },
     });
 
-    const grossIncomePaise = Number(earningsAgg._sum.totalAmount || 0);
+    const grossIncomePaise = Number(earningsAgg._sum.netAmount || 0);
     const grossIncome = paiseToRupees(grossIncomePaise);
 
     // Aggregate deductible expenses in paise
@@ -155,7 +155,7 @@ const TaxService = {
       where: {
         userId,
         date: { gte: fyStart, lte: fyEnd },
-        taxDeductible: true,
+        isTaxDeductible: true,
       },
     });
 

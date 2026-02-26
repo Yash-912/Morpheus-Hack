@@ -28,7 +28,7 @@ const PostJob = () => {
     const { register, handleSubmit, formState: { errors }, watch } = useForm({
         resolver: zodResolver(jobSchema),
         defaultValues: {
-            title: '', description: '', type: 'delivery', amount: 100, address: ''
+            title: '', description: '', type: 'local_delivery', amount: 100, address: ''
         }
     });
 
@@ -38,6 +38,7 @@ const PostJob = () => {
         // Dummy coords based out of Bangalore
         const payload = {
             ...data,
+            amount: data.amount * 100, // convert rupees to paise for backend
             lat: 12.9716 + (Math.random() - 0.5) * 0.05,
             lng: 77.5946 + (Math.random() - 0.5) * 0.05,
         };
@@ -56,7 +57,7 @@ const PostJob = () => {
                 <CheckCircle2 size={64} className="text-[#84cc16] mb-4" />
                 <h2 className="text-display-sm font-bold text-gigpay-navy mb-2">Gig Posted!</h2>
                 <p className="text-body-md text-gigpay-text-secondary mb-6 max-w-[280px]">
-                    Your gig is now live for nearby workers. <strong className="text-gigpay-navy">₹{successPayload.amount}</strong> has been secured in Escrow.
+                    Your gig is now live for nearby workers. <strong className="text-gigpay-navy">₹{(successPayload?.offeredPrice || successPayload?.amount || 0) / 100}</strong> has been secured in Escrow.
                 </p>
                 <div className="flex flex-col gap-3 w-full">
                     <Button onClick={() => navigate(`/community/${successPayload.id}`)}>View Job Detail</Button>
@@ -93,10 +94,10 @@ const PostJob = () => {
                             {...register('type')}
                             className="p-3 rounded-lg border-2 border-gigpay-navy shadow-brutal font-dm-sans bg-white focus:outline-none appearance-none"
                         >
-                            <option value="delivery">Delivery</option>
-                            <option value="errand">Errand</option>
+                            <option value="local_delivery">Delivery / Errand</option>
+                            <option value="home_service">General Help</option>
                             <option value="freelance">Freelance</option>
-                            <option value="help">General Help</option>
+                            <option value="ride">Ride</option>
                         </select>
                     </div>
 
