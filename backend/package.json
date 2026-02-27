@@ -27,6 +27,8 @@
   "author": "GigPay Team",
   "license": "UNLICENSED",
   "dependencies": {
+    "@neondatabase/serverless": "^0.10.0",
+    "@prisma/adapter-neon": "^5.22.0",
     "@prisma/client": "^5.22.0",
     "axios": "^1.7.7",
     "bcryptjs": "^2.4.3",
@@ -41,11 +43,13 @@
     "morgan": "^1.10.0",
     "multer": "^1.4.5-lts.1",
     "node-cron": "^3.0.3",
+    "pg": "^8.19.0",
     "seedrandom": "^3.0.5",
     "sharp": "^0.33.5",
     "socket.io": "^4.8.0",
     "uuid": "^9.0.1",
-    "winston": "^3.14.2"
+    "winston": "^3.14.2",
+    "ws": "^8.19.0"
   },
   "optionalDependencies": {
     "@aws-sdk/client-rekognition": "^3.665.0",
