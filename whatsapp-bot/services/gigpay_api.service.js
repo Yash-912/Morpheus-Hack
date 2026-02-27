@@ -145,23 +145,6 @@ const GigPayAPI = {
         return res.data.data;
     },
 
-    /** Get insurance plans */
-    async getInsurancePlans(token) {
-        const res = await api.get('/api/insurance/plans', {
-            headers: authHeader(token),
-        });
-        return res.data.data;
-    },
-
-    /** Activate insurance plan */
-    async activateInsurance(token, type, duration = 1) {
-        const res = await api.post(
-            '/api/insurance/activate',
-            { type, duration },
-            { headers: authHeader(token) }
-        );
-        return res.data.data;
-    },
 
     /** Get tax summary */
     async getTaxSummary(token) {

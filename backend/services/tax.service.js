@@ -26,7 +26,7 @@ const OLD_REGIME_SLABS = [
 
 const STANDARD_DEDUCTION = 75000; // ₹75,000 for salaried/pension (new regime 2024-25)
 const SECTION_80C_MAX = 150000;
-const SECTION_80D_MAX_SELF = 25000;
+
 const REBATE_87A_LIMIT_OLD = 500000;
 const REBATE_87A_LIMIT_NEW = 700000;
 const REBATE_87A_MAX_NEW = 25000;
@@ -186,13 +186,7 @@ const TaxService = {
         currentClaimed: paiseToRupees(claimedByCategory.phone_recharge || 0),
         tip: 'Mobile data is essential for gig work — deductible',
       },
-      {
-        category: 'insurance_premium',
-        label: 'Insurance premiums (80D)',
-        maxAmount: SECTION_80D_MAX_SELF,
-        currentClaimed: paiseToRupees(claimedByCategory.insurance_premium || 0),
-        tip: 'Health insurance premium up to ₹25,000 under Section 80D',
-      },
+
       {
         category: 'section_80c',
         label: 'Section 80C investments',

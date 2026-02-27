@@ -45,7 +45,7 @@ model User {
   earnings                Earning[]
   expenses                Expense[]
   forecastData            ForecastData[]
-  insurancePolicies       InsurancePolicy[]
+
   loans                   Loan[]
   notifications           Notification[]
   payouts                 Payout[]
@@ -200,42 +200,7 @@ model LoanRepayment {
   @@map("loan_repayments")
 }
 
-model InsurancePolicy {
-  id              String                @id @default(uuid())
-  userId          String                @map("user_id")
-  type            InsuranceType
-  status          InsurancePolicyStatus @default(active)
-  premiumPaid     BigInt                @map("premium_paid")
-  coverAmount     BigInt                @map("cover_amount")
-  validFrom       DateTime              @map("valid_from")
-  validTo         DateTime              @map("valid_to")
-  partner         InsurancePartner
-  partnerPolicyId String?               @map("partner_policy_id")
-  createdAt       DateTime              @default(now()) @map("created_at")
-  updatedAt       DateTime              @updatedAt @map("updated_at")
-  claims          InsuranceClaim[]
-  user            User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([userId])
-  @@index([status, validTo])
-  @@map("insurance_policies")
-}
-
-model InsuranceClaim {
-  id             String          @id @default(uuid())
-  policyId       String          @map("policy_id")
-  submittedAt    DateTime        @default(now()) @map("submitted_at")
-  status         ClaimStatus     @default(pending)
-  amountClaimed  BigInt          @map("amount_claimed")
-  amountApproved BigInt?         @map("amount_approved")
-  documents      String[]
-  notes          String?
-  updatedAt      DateTime        @updatedAt @map("updated_at")
-  policy         InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
-
-  @@index([policyId])
-  @@map("insurance_claims")
-}
 
 model Expense {
   id              String          @id @default(uuid())
@@ -590,24 +555,7 @@ enum RepaymentMethod {
   manual
 }
 
-enum InsuranceType {
-  daily_accident
-  weekly_health
-  device
-  vehicle_breakdown
-}
 
-enum InsurancePolicyStatus {
-  active
-  expired
-  claimed
-}
-
-enum ClaimStatus {
-  pending
-  approved
-  rejected
-}
 
 // ==== GIGSCORE & FINANCIAL HUB ENUMS ====
 enum CreditLineType {
@@ -622,10 +570,7 @@ enum CreditLineStatus {
 }
 // ========================================
 
-enum InsurancePartner {
-  acko
-  insurancedekho
-}
+
 
 enum ExpenseCategory {
   fuel
@@ -716,7 +661,7 @@ enum SavingTransactionType {
 enum NotificationType {
   payout
   loan
-  insurance
+
   hot_zone
   tax
   algo_insight

@@ -22,7 +22,7 @@ function startNotificationScheduler() {
       await Promise.all([
         sendEarningsDigest(),
         sendTaxReminders(),
-        sendInsuranceExpiryAlerts(),
+
       ]);
 
       logger.info('Notification scheduler completed');
@@ -129,47 +129,6 @@ async function sendTaxReminders() {
     logger.info(`Tax reminders sent to ${activeUsers.length} users`);
   } catch (error) {
     logger.error('Tax reminders failed', { error: error.message });
-  }
-}
-
-/**
- * Send alerts for insurance policies expiring in the next 7 days.
- */
-async function sendInsuranceExpiryAlerts() {
-  try {
-    const now = new Date();
-    const sevenDaysFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-    const expiringPolicies = await prisma.insurancePolicy.findMany({
-      where: {
-        status: 'active',
-        validTo: { gte: now, lte: sevenDaysFromNow },
-      },
-      include: {
-        user: { select: { id: true } },
-      },
-    });
-
-    for (const policy of expiringPolicies) {
-      const daysLeft = Math.ceil(
-        (policy.validTo.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
-      );
-
-      await notificationQueue.add({
-        userId: policy.userId,
-        notification: {
-          type: 'insurance_expiry',
-          title: 'Insurance Expiring Soon 🛡️',
-          body: `Your ${policy.type} insurance expires in ${daysLeft} day${daysLeft > 1 ? 's' : ''}. Renew now to stay protected.`,
-          data: { screen: 'insurance', policyId: policy.id },
-        },
-        channels: ['in_app', 'push'],
-      });
-    }
-
-    logger.info(`Insurance expiry alerts sent for ${expiringPolicies.length} policies`);
-  } catch (error) {
-    logger.error('Insurance expiry alerts failed', { error: error.message });
   }
 }
 

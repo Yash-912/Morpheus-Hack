@@ -15,7 +15,7 @@ const CashoutHandler = require('./cashout.handler');
 const ForecastHandler = require('./forecast.handler');
 const ZoneHandler = require('./zone.handler');
 const LoanHandler = require('./loan.handler');
-const InsuranceHandler = require('./insurance.handler');
+
 const TaxHandler = require('./tax.handler');
 const ExpenseHandler = require('./expense.handler');
 const CommunityHandler = require('./community.handler');
@@ -82,8 +82,6 @@ async function handleMessage({ phone, message, senderName }) {
         case 'APPLY_LOAN':
             return LoanHandler.handle(ctx);
 
-        case 'ACTIVATE_INSURANCE':
-            return InsuranceHandler.handle(ctx);
 
         case 'TAX_HELP':
             return TaxHandler.handle(ctx);

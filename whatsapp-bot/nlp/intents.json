@@ -119,25 +119,6 @@
             ]
         },
         {
-            "name": "ACTIVATE_INSURANCE",
-            "triggers_en": [
-                "insurance",
-                "insure",
-                "protect",
-                "accident cover"
-            ],
-            "triggers_hi": [
-                "bima",
-                "insurance",
-                "protect karo"
-            ],
-            "requires_entities": [],
-            "sample_responses": [
-                "insurance",
-                "insuranceActivated"
-            ]
-        },
-        {
             "name": "TAX_HELP",
             "triggers_en": [
                 "tax",

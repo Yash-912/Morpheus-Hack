@@ -15,13 +15,7 @@ const QuickActions = () => {
             path: '/loans',
             color: 'bg-red-50 border-red-200',
         },
-        {
-            icon: '🛡️',
-            label: 'Insurance',
-            description: 'From ₹1/day',
-            path: '/wallet',
-            color: 'bg-blue-50 border-blue-200',
-        },
+
         {
             icon: '🧾',
             label: 'Tax Assistant',

@@ -95,13 +95,7 @@ const Wallet = () => {
                     <h4 className="font-bold text-gigpay-navy text-sm">{t('savings')}</h4>
                     <p className="text-xs text-gigpay-text-secondary mt-1">{t('autoStash')}</p>
                 </div>
-                <div onClick={() => navigate('/wallet/insurance')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
-                    <div className="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mb-2">
-                        <Shield size={20} />
-                    </div>
-                    <h4 className="font-bold text-gigpay-navy text-sm">{t('insurance')}</h4>
-                    <p className="text-xs text-gigpay-text-secondary mt-1">₹1/day</p>
-                </div>
+
             </div>
 
             {/* Escrow/Safety Notice */}

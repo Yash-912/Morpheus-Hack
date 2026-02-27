@@ -12,7 +12,6 @@ const FILTER_TYPES = [
     { key: 'payout', label: 'Payouts' },
     { key: 'loan', label: 'Loans' },
     { key: 'savings', label: 'Savings' },
-    { key: 'insurance', label: 'Insurance' },
 ];
 
 const STATUS_FILTERS = [
@@ -54,7 +53,6 @@ const Transactions = () => {
         payout: '💸',
         loan: '🏦',
         savings: '🐷',
-        insurance: '🛡️',
     };
 
     const statusStyles = {
@@ -91,8 +89,8 @@ const Transactions = () => {
                                 key={f.key}
                                 onClick={() => setTypeFilter(f.key)}
                                 className={`px-3 py-1.5 rounded-full text-caption font-semibold border-[1.5px] transition-all duration-75 ${typeFilter === f.key
-                                        ? 'bg-[#C8F135]/20 border-gigpay-navy text-gigpay-navy'
-                                        : 'bg-white border-gigpay-border text-gigpay-text-secondary'
+                                    ? 'bg-[#C8F135]/20 border-gigpay-navy text-gigpay-navy'
+                                    : 'bg-white border-gigpay-border text-gigpay-text-secondary'
                                     }`}
                             >
                                 {f.label}
@@ -108,8 +106,8 @@ const Transactions = () => {
                                 key={f.key}
                                 onClick={() => setStatusFilter(f.key)}
                                 className={`px-3 py-1.5 rounded-full text-caption font-semibold border-[1.5px] transition-all duration-75 ${statusFilter === f.key
-                                        ? 'bg-[#C8F135]/20 border-gigpay-navy text-gigpay-navy'
-                                        : 'bg-white border-gigpay-border text-gigpay-text-secondary'
+                                    ? 'bg-[#C8F135]/20 border-gigpay-navy text-gigpay-navy'
+                                    : 'bg-white border-gigpay-border text-gigpay-text-secondary'
                                     }`}
                             >
                                 {f.label}

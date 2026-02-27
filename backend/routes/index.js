@@ -14,7 +14,7 @@ router.use('/users', require('./user.routes'));
 router.use('/earnings', require('./earnings.routes'));
 router.use('/payouts', require('./payouts.routes'));
 router.use('/loans', require('./loans.routes'));
-router.use('/insurance', require('./insurance.routes'));
+
 router.use('/expenses', require('./expenses.routes'));
 router.use('/tax', require('./tax.routes'));
 router.use('/community', require('./community.routes'));

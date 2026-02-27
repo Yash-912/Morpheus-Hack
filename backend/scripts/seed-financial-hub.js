@@ -72,13 +72,9 @@ async function seed() {
     console.log('5. Seeding savings goals...');
     await client.query(`
         INSERT INTO savings_goals (user_id, title, target_amount, current_amount, daily_deduction_limit, is_completed)
-        VALUES ($1, 'Bike Insurance', 4500, 2700, 25, false)
-    `, [userId]);
-    await client.query(`
-        INSERT INTO savings_goals (user_id, title, target_amount, current_amount, daily_deduction_limit, is_completed)
         VALUES ($1, 'Phone Repair Fund', 2000, 0, 0, false)
     `, [userId]);
-    console.log('   Done (Bike Insurance 60%, Phone Repair new)');
+    console.log('   Done (Phone Repair new)');
 
     // Credit History
     console.log('6. Seeding credit history...');

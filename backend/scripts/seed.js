@@ -228,17 +228,7 @@ async function main() {
     });
 
     // 6c. Savings Goals (Gullaks)
-    console.log("  → Savings goals (Bike Insurance 60%, Phone Repair planned)...");
-    await prisma.savingsGoal.create({
-        data: {
-            userId: user.id,
-            title: "Bike Insurance",
-            targetAmount: 4500,
-            currentAmount: 2700,
-            dailyDeductionLimit: 25,
-            isCompleted: false,
-        },
-    });
+    console.log("  → Savings goals (Phone Repair planned)...");
 
     await prisma.savingsGoal.create({
         data: {

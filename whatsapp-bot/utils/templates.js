@@ -5,7 +5,7 @@
 const templates = {
     en: {
         welcome: (name) =>
-            `👋 Welcome back${name ? ', ' + name : ''}!\n\nI'm your GigPay assistant. Here's what I can help with:\n\n💰 *BALANCE* — Check your wallet\n📊 *EARNINGS* — Today's earnings\n🔮 *FORECAST* — Tomorrow's prediction\n🏙️ *ZONES* — Hot delivery zones\n💸 *CASHOUT {amount}* — Withdraw money\n🏦 *LOAN* — Emergency loan\n🛡️ *INSURANCE* — Micro insurance\n🧾 *TAX* — Tax summary\n💼 *EXPENSES* — Monthly expenses\n🤝 *JOBS* — Community jobs\n\nType any command or just ask me!`,
+            `👋 Welcome back${name ? ', ' + name : ''}!\n\nI'm your GigPay assistant. Here's what I can help with:\n\n💰 *BALANCE* — Check your wallet\n📊 *EARNINGS* — Today's earnings\n🔮 *FORECAST* — Tomorrow's prediction\n🏙️ *ZONES* — Hot delivery zones\n💸 *CASHOUT {amount}* — Withdraw money\n🏦 *LOAN* — Emergency loan\n🧾 *TAX* — Tax summary\n💼 *EXPENSES* — Monthly expenses\n🤝 *JOBS* — Community jobs\n\nType any command or just ask me!`,
 
         balance: (data) =>
             `💰 *Your GigPay Wallet*\n\n` +
@@ -102,23 +102,7 @@ const templates = {
             `Repayment: ${data.repaymentPercent}% auto-deducted from each cashout.\n\n` +
             `Use it wisely 🙏`,
 
-        insurance: (plans) => {
-            const list = (plans || [])
-                .slice(0, 4)
-                .map((p, i) => `${i + 1}. *${p.name}* — ₹${paiseToRupees(p.premium)}/day | Cover: ₹${paiseToRupees(p.coverAmount)}`)
-                .join('\n');
-            return (
-                `🛡️ *Micro Insurance Plans*\n\n${list}\n\n` +
-                `To activate, reply: *INSURE {number}*\nExample: INSURE 1`
-            );
-        },
 
-        insuranceActivated: (policy) =>
-            `✅ *Insurance Activated!*\n\n` +
-            `Plan: ${policy.type}\n` +
-            `Valid until: ${formatDate(policy.validTo)}\n` +
-            `Cover: ₹${paiseToRupees(policy.coverAmount)}\n\n` +
-            `You're protected! Ride safe 🚗`,
 
         tax: (data) =>
             `🧾 *Tax Summary FY ${data.financialYear}*\n\n` +
@@ -168,7 +152,6 @@ const templates = {
             `• *CASHOUT 500* — Withdraw ₹500\n` +
             `• *LOAN* — Check loan eligibility\n` +
             `• *LOAN 2000* — Apply for ₹2000 loan\n` +
-            `• *INSURANCE* — View insurance plans\n` +
             `• *TAX* — This year's tax summary\n` +
             `• *EXPENSES* — Monthly expenses\n` +
             `• *JOBS* — Community jobs near you\n\n` +
@@ -190,7 +173,7 @@ const templates = {
 
     hi: {
         welcome: (name) =>
-            `👋 Namaste${name ? ' ' + name : ''}!\n\nMain aapka GigPay assistant hoon. Main in cheezein kar sakta hoon:\n\n💰 *BALANCE* — Wallet balance\n📊 *EARNINGS* — Aaj ki kamai\n🔮 *FORECAST* — Kal ki prediction\n🏙️ *ZONES* — Garam delivery zones\n💸 *CASHOUT {amount}* — Paise nikalo\n🏦 *LOAN* — Emergency loan\n🛡️ *INSURANCE* — Micro insurance\n🧾 *TAX* — Tax summary\n💼 *EXPENSES* — Mahine ke kharche\n🤝 *JOBS* — Community jobs\n\nKoi bhi command type karo!`,
+            `👋 Namaste${name ? ' ' + name : ''}!\n\nMain aapka GigPay assistant hoon. Main in cheezein kar sakta hoon:\n\n💰 *BALANCE* — Wallet balance\n📊 *EARNINGS* — Aaj ki kamai\n🔮 *FORECAST* — Kal ki prediction\n🏙️ *ZONES* — Garam delivery zones\n💸 *CASHOUT {amount}* — Paise nikalo\n🏦 *LOAN* — Emergency loan\n🧾 *TAX* — Tax summary\n💼 *EXPENSES* — Mahine ke kharche\n🤝 *JOBS* — Community jobs\n\nKoi bhi command type karo!`,
 
         balance: (data) =>
             `💰 *Aapka GigPay Wallet*\n\n` +
@@ -263,7 +246,6 @@ const templates = {
             `• *ZONES* — Hot zones\n` +
             `• *CASHOUT 500* — ₹500 nikalo\n` +
             `• *LOAN* — Loan eligibility\n` +
-            `• *INSURANCE* — Insurance plans\n` +
             `• *TAX* — Tax summary\n` +
             `• *EXPENSES* — Kharche\n` +
             `• *JOBS* — Community jobs\n\n` +

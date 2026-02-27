@@ -19,7 +19,6 @@ import { ProtectedRoute } from './components/shared/ProtectedRoute';
 
 // Step 7 — Wallet sub-pages
 import Transactions from './pages/Wallet/Transactions';
-import Insurance from './pages/Wallet/Insurance';
 
 // Step 8 — Insights sub-pages
 import AlgoInsights from './pages/Insights/AlgoInsights';
@@ -88,7 +87,6 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/wallet" element={<Wallet />} />
                     <Route path="/wallet/transactions" element={<Transactions />} />
-                    <Route path="/wallet/insurance" element={<Insurance />} />
                     <Route path="/cashout" element={<Cashout />} />
                     <Route path="/insights" element={<Insights />} />
                     <Route path="/insights/algo" element={<AlgoInsights />} />

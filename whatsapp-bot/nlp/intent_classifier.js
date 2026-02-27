@@ -82,17 +82,7 @@ const INTENTS = {
         examples: ['loan', 'udhaar', 'paise chahiye', 'emergency money', 'loan 2000'],
     },
 
-    ACTIVATE_INSURANCE: {
-        patterns: [
-            /\binsur(e|ance)\b/i,
-            /\binsure\b/i,
-            /\bbima\b/i,
-            /\bprotect\b/i,
-            /\baccident\b.*\b(cover|protection)\b/i,
-            /\bhealth\b.*\b(cover|plan)\b/i,
-        ],
-        examples: ['insurance', 'bima', 'insure me', 'accident protection'],
-    },
+
 
     TAX_HELP: {
         patterns: [
@@ -179,11 +169,7 @@ function extractEntities(text, intent) {
         }
     }
 
-    // Insurance plan number
-    if (intent === 'ACTIVATE_INSURANCE') {
-        const planMatch = text.match(/insure\s+(\d+)/i);
-        if (planMatch) entities.planIndex = parseInt(planMatch[1], 10) - 1;
-    }
+
 
     // Platform (zomato, swiggy, ola, uber, dunzo)
     const platformMatch = text.match(/\b(zomato|swiggy|ola|uber|dunzo|rapido)\b/i);
