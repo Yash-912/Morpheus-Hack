@@ -7,6 +7,7 @@ import { Activity, Lightbulb, TrendingUp, TrendingDown, Users, Upload, Zap, Chec
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import api from '../services/api.service';
 import ExpenseEarningsChart from './ExpenseEarningsChart';
+import InsightExplanation from '../components/insights/InsightExplanation';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
 import { useLanguage } from '../context/LanguageContext';
@@ -123,9 +124,18 @@ const Insights = () => {
             </header>
 
             {/* ═══════════════════════════════════════════════════
-                Expense vs Earnings Chart + SMS Simulation
+                Explainable AI Summary + Chart
                 ═══════════════════════════════════════════════════ */}
-            <ExpenseEarningsChart />
+            <div>
+                {/* AI Summary Banner */}
+                <InsightExplanation insightData={{
+                    trend: 'Last 7 Days Earnings',
+                    data: dummyChartData,
+                    totalWeekly: dummyChartData.reduce((acc, d) => acc + d.earnings, 0) / 100
+                }} />
+
+                <ExpenseEarningsChart />
+            </div>
 
             {/* Tax Assistant card — link to /insights/tax */}
             <Card

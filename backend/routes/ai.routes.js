@@ -36,4 +36,12 @@ router.post(
     aiController.textChat
 );
 
+// POST /api/ai/explain-insights — Summarize and speak JSON dashboard data
+router.post(
+    '/explain-insights',
+    [body('insightData').isObject().withMessage('insightData must be an object')],
+    validate,
+    aiController.generateInsightsSummary
+);
+
 module.exports = router;

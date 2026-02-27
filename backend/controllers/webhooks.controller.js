@@ -208,40 +208,90 @@ const webhooksController = {
   },
 
   /**
+   * GET /api/webhooks/whatsapp
+   * Meta webhook verification — returns hub.challenge if verify token matches.
+   */
+  async whatsappVerify(req, res) {
+    const mode = req.query['hub.mode'];
+    const token = req.query['hub.verify_token'];
+    const challenge = req.query['hub.challenge'];
+
+    const verifyToken = process.env.META_WEBHOOK_VERIFY_TOKEN || process.env.WHATSAPP_VERIFY_TOKEN;
+
+    if (mode === 'subscribe' && token === verifyToken) {
+      logger.info('WhatsApp webhook verified successfully');
+      return res.status(200).send(challenge);
+    }
+
+    logger.warn('WhatsApp webhook verification failed', { mode, tokenMatch: token === verifyToken });
+    return res.status(403).json({ error: 'Verification failed' });
+  },
+
+  /**
    * POST /api/webhooks/whatsapp
    * WhatsApp / Meta Business API webhook receiver.
    */
   async whatsapp(req, res, next) {
     try {
-      // Meta webhook verification (for GET challenges, handled at route level typically)
-      // This POST handler processes incoming messages
-
-      const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
-
-      // Verify X-Hub-Signature-256 if present
+      // ── Twilio vs Meta Payload Detection ──
+      const isTwilio = req.body && req.body.From && req.body.Body;
       const hubSignature = req.headers['x-hub-signature-256'];
-      if (hubSignature && process.env.WHATSAPP_APP_SECRET) {
-        const body = JSON.stringify(req.body);
-        const expected = 'sha256=' + crypto
-          .createHmac('sha256', process.env.WHATSAPP_APP_SECRET)
-          .update(body)
-          .digest('hex');
 
-        if (hubSignature !== expected) {
-          logger.warn('WhatsApp webhook signature mismatch');
-          return res.status(401).json({
-            success: false,
-            error: { code: 'SIGNATURE_INVALID', message: 'Invalid webhook signature' },
-          });
+      // Only verify Meta signatures if it's not a Twilio payload
+      if (!isTwilio && process.env.WHATSAPP_APP_SECRET) {
+        if (!hubSignature) {
+          // Allow pass through if this is a generic ping, but warn
+          logger.warn('WhatsApp webhook missing signature (and not Twilio form)');
+        } else {
+          const body = JSON.stringify(req.body);
+          const expected = 'sha256=' + crypto
+            .createHmac('sha256', process.env.WHATSAPP_APP_SECRET)
+            .update(body)
+            .digest('hex');
+
+          if (hubSignature !== expected) {
+            logger.warn('WhatsApp webhook signature mismatch');
+            return res.status(401).json({
+              success: false,
+              error: { code: 'SIGNATURE_INVALID', message: 'Invalid webhook signature' },
+            });
+          }
         }
       }
 
+      // ── Twilio Fallback Logic ─────────────────────────────────
+      // Twilio sends application/x-www-form-urlencoded with 'From' and 'Body'
+      if (req.body.From && req.body.Body) {
+        let senderPhone = req.body.From;
+        if (senderPhone.startsWith('whatsapp:')) {
+          senderPhone = senderPhone.replace('whatsapp:', '');
+        }
+        const messageBody = req.body.Body || '';
+
+        logger.info('WhatsApp message received (Twilio)', {
+          from: senderPhone,
+          body: messageBody.substring(0, 100),
+        });
+
+        const WhatsAppBot = require('../services/whatsappBot.service');
+        try {
+          await WhatsAppBot.handleMessage(senderPhone, messageBody);
+        } catch (botErr) {
+          logger.error('WhatsApp bot handler failed (Twilio)', { error: botErr.message });
+        }
+        return res.status(200).send('<Response></Response>'); // Twilio requires TwiML
+      }
+
+      // ── Meta Logic ────────────────────────────────────────────
+      // Meta sends application/json with 'entry'
       const { entry } = req.body;
       if (!entry || !Array.isArray(entry)) {
         return res.status(200).json({ success: true, message: 'No entries' });
       }
 
       // Process each entry
+      const WhatsAppBot = require('../services/whatsappBot.service');
+
       for (const e of entry) {
         const changes = e.changes || [];
         for (const change of changes) {
@@ -250,30 +300,34 @@ const webhooksController = {
           const messages = change.value?.messages || [];
           for (const msg of messages) {
             const senderPhone = msg.from;
-            const messageBody = msg.text?.body || '';
             const messageType = msg.type;
+            let messageBody = '';
+
+            // Extract text from different message types
+            if (messageType === 'text') {
+              messageBody = msg.text?.body || '';
+            } else if (messageType === 'interactive') {
+              // User tapped a button or list item
+              const btnReply = msg.interactive?.button_reply;
+              const listReply = msg.interactive?.list_reply;
+              const replyId = btnReply?.id || listReply?.id || '';
+              // Convert button IDs like "cmd_balance" → "balance"
+              messageBody = replyId.replace('cmd_', '').replace('cashout_', '');
+            }
 
             logger.info('WhatsApp message received', {
               from: senderPhone,
               type: messageType,
-              body: messageBody.substring(0, 100),
+              body: (messageBody || '').substring(0, 100),
             });
 
-            // Forward to WhatsApp bot service for processing
-            // In production, this would either:
-            // 1. Publish to a Redis queue for the WhatsApp bot microservice
-            // 2. Make an HTTP call to the bot service
-            try {
-              const { redisClient } = require('../config/redis');
-              await redisClient.publish('whatsapp:incoming', JSON.stringify({
-                phone: senderPhone,
-                body: messageBody,
-                type: messageType,
-                timestamp: msg.timestamp,
-                messageId: msg.id,
-              }));
-            } catch (pubErr) {
-              logger.error('Failed to publish WhatsApp message', { error: pubErr.message });
+            // Route to bot handler (no Redis dependency)
+            if (messageBody) {
+              try {
+                await WhatsAppBot.handleMessage(senderPhone, messageBody);
+              } catch (botErr) {
+                logger.error('WhatsApp bot handler failed', { error: botErr.message });
+              }
             }
           }
         }
