@@ -52,69 +52,73 @@ const queryClient = new QueryClient({
   },
 });
 
+import { LanguageProvider } from './context/LanguageContext';
+
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <Router>
-        <div className="min-h-screen w-full bg-[#E5E9DF] flex justify-center text-gigpay-text-primary">
-          <div className="w-full max-w-[420px] bg-gigpay-surface relative shadow-xl overflow-x-hidden">
-            <Routes>
-              {/* Public Routes */}
-              <Route path="/login" element={<Landing />} />
-              <Route path="/auth/phone" element={<PhoneEntry />} />
+    <LanguageProvider>
+      <QueryClientProvider client={queryClient}>
+        <Router>
+          <div className="min-h-screen w-full bg-[#E5E9DF] flex justify-center text-gigpay-text-primary">
+            <div className="w-full max-w-[420px] bg-gigpay-surface relative shadow-xl overflow-x-hidden">
+              <Routes>
+                {/* Public Routes */}
+                <Route path="/login" element={<Landing />} />
+                <Route path="/auth/phone" element={<PhoneEntry />} />
 
-              {/* Protected Routes (Require Authentication and Tokens) */}
-              <Route element={<ProtectedRoute />}>
-                {/* Mid-Journey Onboarding */}
-                <Route path="/onboarding/kyc" element={<AadhaarKYC />} />
-                <Route path="/onboarding/selfie" element={<SelfieCapture />} />
-                <Route path="/onboarding/platforms" element={<PlatformLink />} />
-                <Route path="/onboarding/bank" element={<BankSetup />} />
+                {/* Protected Routes (Require Authentication and Tokens) */}
+                <Route element={<ProtectedRoute />}>
+                  {/* Mid-Journey Onboarding */}
+                  <Route path="/onboarding/kyc" element={<AadhaarKYC />} />
+                  <Route path="/onboarding/selfie" element={<SelfieCapture />} />
+                  <Route path="/onboarding/platforms" element={<PlatformLink />} />
+                  <Route path="/onboarding/bank" element={<BankSetup />} />
 
-                {/* Authenticated App Routes */}
-                <Route element={<AppLayout />}>
-                  <Route path="/" element={<Home />} />
-                  <Route path="/wallet" element={<Wallet />} />
-                  <Route path="/wallet/transactions" element={<Transactions />} />
-                  <Route path="/wallet/insurance" element={<Insurance />} />
-                  <Route path="/cashout" element={<Cashout />} />
-                  <Route path="/insights" element={<Insights />} />
-                  <Route path="/insights/algo" element={<AlgoInsights />} />
-                  <Route path="/insights/tax" element={<Tax />} />
-                  <Route path="/community" element={<Community />} />
-                  <Route path="/community/my-jobs" element={<MyJobs />} />
-                  <Route path="/community/worker/:workerId" element={<WorkerProfile />} />
-                  <Route path="/community/:id" element={<JobDetail />} />
-                  <Route path="/post-job" element={<PostJob />} />
-                  <Route path="/loans" element={<Loans />} />
-                  <Route path="/savings" element={<Savings />} />
-                  <Route path="/profile" element={<Profile />} />
-                  <Route path="/profile/linked-accounts" element={<LinkedAccounts />} />
-                  <Route path="/profile/support" element={<Support />} />
-                  <Route path="/zones" element={<Zones />} />
-                  <Route path="*" element={<NotFound />} />
+                  {/* Authenticated App Routes */}
+                  <Route element={<AppLayout />}>
+                    <Route path="/" element={<Home />} />
+                    <Route path="/wallet" element={<Wallet />} />
+                    <Route path="/wallet/transactions" element={<Transactions />} />
+                    <Route path="/wallet/insurance" element={<Insurance />} />
+                    <Route path="/cashout" element={<Cashout />} />
+                    <Route path="/insights" element={<Insights />} />
+                    <Route path="/insights/algo" element={<AlgoInsights />} />
+                    <Route path="/insights/tax" element={<Tax />} />
+                    <Route path="/community" element={<Community />} />
+                    <Route path="/community/my-jobs" element={<MyJobs />} />
+                    <Route path="/community/worker/:workerId" element={<WorkerProfile />} />
+                    <Route path="/community/:id" element={<JobDetail />} />
+                    <Route path="/post-job" element={<PostJob />} />
+                    <Route path="/loans" element={<Loans />} />
+                    <Route path="/savings" element={<Savings />} />
+                    <Route path="/profile" element={<Profile />} />
+                    <Route path="/profile/linked-accounts" element={<LinkedAccounts />} />
+                    <Route path="/profile/support" element={<Support />} />
+                    <Route path="/zones" element={<Zones />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Route>
                 </Route>
-              </Route>
-            </Routes>
+              </Routes>
+            </div>
           </div>
-        </div>
-      </Router>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          duration: 3000,
-          style: {
-            background: '#FFFFFF',
-            color: '#0D1B3E',
-            borderRadius: '16px',
-            border: '1.5px solid #D4D8C8',
-            boxShadow: '4px 4px 0px #D4D8C8',
-            fontFamily: '"DM Sans", sans-serif',
-            fontWeight: 600
-          },
-        }}
-      />
-    </QueryClientProvider>
+        </Router>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            duration: 3000,
+            style: {
+              background: '#FFFFFF',
+              color: '#0D1B3E',
+              borderRadius: '16px',
+              border: '1.5px solid #D4D8C8',
+              boxShadow: '4px 4px 0px #D4D8C8',
+              fontFamily: '"DM Sans", sans-serif',
+              fontWeight: 600
+            },
+          }}
+        />
+      </QueryClientProvider>
+    </LanguageProvider>
   );
 }
 

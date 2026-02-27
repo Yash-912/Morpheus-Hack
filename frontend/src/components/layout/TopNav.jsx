@@ -1,10 +1,12 @@
-import { Bell, User } from 'lucide-react';
+import { Bell, User, Globe } from 'lucide-react';
 import { useRealtimeStore } from '../../store/realtime.store';
 import { Button } from '../ui/Button';
 import { Link } from 'react-router-dom';
+import { useLanguage } from '../../context/LanguageContext';
 
 const TopNav = () => {
     const unreadCount = useRealtimeStore(state => state.unreadNotifications);
+    const { cycleLang, langLabel } = useLanguage();
 
     return (
         <header className="fixed top-0 left-1/2 -translate-x-1/2 w-full max-w-[420px] bg-gigpay-surface/90 backdrop-blur-md z-40 border-b-[1.5px] border-gigpay-border px-4 py-3 flex items-center justify-between">
@@ -17,7 +19,17 @@ const TopNav = () => {
             </div>
 
             {/* Actions */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+                {/* Language Toggle */}
+                <button
+                    onClick={cycleLang}
+                    className="flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-gigpay-navy bg-gigpay-lime border-[1.5px] border-gigpay-navy rounded-full shadow-[2px_2px_0px_#0D1B3E] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all"
+                    title="Switch language"
+                >
+                    <Globe size={14} />
+                    {langLabel}
+                </button>
+
                 <button className="relative p-2 text-gigpay-navy-mid hover:bg-gray-100 rounded-full transition-colors">
                     <Bell size={24} />
                     {unreadCount > 0 && (
