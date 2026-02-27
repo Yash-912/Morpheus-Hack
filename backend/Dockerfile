@@ -18,6 +18,9 @@ RUN npm ci --only=production
 # Copy application source
 COPY . .
 
+# Generate Prisma client
+RUN npx prisma generate
+
 # Expose API port
 EXPOSE 5000
 
