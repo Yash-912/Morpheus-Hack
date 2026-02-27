@@ -67,6 +67,69 @@ const translations = {
         today: 'Today',
         earnings: 'Earnings',
         balance: 'Balance',
+
+        // Home — Financial Hub
+        financialHub: 'Financial Hub',
+        gigScore: 'GigScore',
+        yourCreditProfile: 'Your credit profile',
+        microSavings: 'Micro-Savings',
+        goldTargetGullak: 'Gold & Target Gullak',
+        emergencyFund: 'Emergency Fund',
+        instantCashAdvance: 'Instant cash advance',
+        taxHub: 'Tax Hub',
+        claimTdsRefund: 'Claim TDS refund',
+
+        // Home — SMS widget
+        smsTransactions: 'SMS Transactions',
+        reSync: 'Re-sync',
+        syncing: 'Syncing...',
+        newTransactions: 'new transactions',
+        lastSyncAt: 'Last sync',
+        tapToView: 'Tap to view',
+
+        // Earning Widget
+        todaysEarnings: "Today's Earnings",
+        vsYesterday: 'vs Yesterday',
+
+        // Action Grid
+        scanPay: 'Scan & Pay',
+        bankTransfer: 'Bank Transfer',
+        recharge: 'Recharge',
+        offers: 'Offers',
+
+        // Wallet
+        passbook: 'Passbook',
+        earningsAndWithdrawals: 'Your earnings and withdrawals',
+        zeroInterestAdvance: '0% Advance',
+        emergency: 'Emergency',
+        autoStash: 'Auto-stash',
+        platformEarning: 'Platform Earning',
+        instantWithdrawal: 'Instant Withdrawal',
+        escrowNotice: 'Your funds are held safely in a regulated master escrow account. Instant cashouts clear in under 60 seconds.',
+
+        // Insights
+        insightsAnalytics: 'Insights & Analytics',
+        aiPoweredForecast: 'AI-powered earnings forecast',
+        taxAssistant: 'Tax Assistant',
+        taxAssistantDesc: 'Section 44AD calculator, deductions & ITR filing',
+        forecastEarnings: 'Forecast Earnings',
+        checkingData: 'Checking data…',
+        dataLoaded: '✅ Earnings data loaded — you can forecast directly, or upload a new CSV to update.',
+        uploadCsvPrompt: 'Upload your platform earnings CSV to get started.',
+        uploading: 'Uploading…',
+        uploadEarningsCsv: 'Upload Earnings CSV',
+        predicting: 'Predicting…',
+        forecastTomorrow: "Forecast Tomorrow's Earnings",
+        tomorrowPredicted: "Tomorrow's Predicted Earnings",
+        confidence: 'confidence',
+        perDay: 'per day',
+        performanceVsCity: 'Performance vs City',
+        analyzing: 'Analyzing...',
+        your30DayAvg: 'Your 30-Day Avg',
+        vsCityAverage: 'vs City Average',
+        algorithmicHacks: 'Algorithmic Hacks',
+        loadingInsights: 'Loading insights...',
+        noAlgoInsights: 'No algorithmic insights found for your city right now.',
     },
 
     hi: {
@@ -133,6 +196,69 @@ const translations = {
         today: 'आज',
         earnings: 'कमाई',
         balance: 'बैलेंस',
+
+        // Home — Financial Hub
+        financialHub: 'वित्तीय केंद्र',
+        gigScore: 'गिगस्कोर',
+        yourCreditProfile: 'आपकी क्रेडिट प्रोफाइल',
+        microSavings: 'सूक्ष्म-बचत',
+        goldTargetGullak: 'सोना और टार्गेट गुल्लक',
+        emergencyFund: 'आपातकालीन कोष',
+        instantCashAdvance: 'तुरंत नकद अग्रिम',
+        taxHub: 'कर केंद्र',
+        claimTdsRefund: 'TDS रिफंड का दावा करें',
+
+        // Home — SMS widget
+        smsTransactions: 'SMS लेनदेन',
+        reSync: 'पुनर्-सिंक',
+        syncing: 'सिंक हो रहा है...',
+        newTransactions: 'नए लेनदेन',
+        lastSyncAt: 'अंतिम सिंक',
+        tapToView: 'देखने के लिए टैप करें',
+
+        // Earning Widget
+        todaysEarnings: 'आज की कमाई',
+        vsYesterday: 'कल की तुलना में',
+
+        // Action Grid
+        scanPay: 'स्कैन और भुगतान',
+        bankTransfer: 'बैंक ट्रांसफ़र',
+        recharge: 'रिचार्ज',
+        offers: 'ऑफर्स',
+
+        // Wallet
+        passbook: 'पासबुक',
+        earningsAndWithdrawals: 'आपकी कमाई और निकासी',
+        zeroInterestAdvance: '0% अग्रिम',
+        emergency: 'आपातकालीन',
+        autoStash: 'ऑटो-बचत',
+        platformEarning: 'प्लेटफॉर्म कमाई',
+        instantWithdrawal: 'तुरंत निकासी',
+        escrowNotice: 'आपके फंड एक विनियमित मास्टर एस्क्रो खाते में सुरक्षित रूप से रखे गए हैं। तुरंत निकासी 60 सेकंड से कम में साफ हो जाती है।',
+
+        // Insights
+        insightsAnalytics: 'इनसाइट्स और विश्लेषण',
+        aiPoweredForecast: 'AI-संचालित कमाई पूर्वानुमान',
+        taxAssistant: 'कर सहायक',
+        taxAssistantDesc: 'धारा 44AD कैलकुलेटर, कटौती और ITR फाइलिंग',
+        forecastEarnings: 'कमाई का पूर्वानुमान',
+        checkingData: 'डेटा जांच रहे हैं...',
+        dataLoaded: '✅ कमाई डेटा लोड — आप सीधे पूर्वानुमान कर सकते हैं।',
+        uploadCsvPrompt: 'शुरू करने के लिए अपनी प्लेटफॉर्म कमाई CSV अपलोड करें।',
+        uploading: 'अपलोड हो रहा है...',
+        uploadEarningsCsv: 'कमाई CSV अपलोड करें',
+        predicting: 'भविष्यवाणी हो रही है...',
+        forecastTomorrow: 'कल की कमाई का पूर्वानुमान',
+        tomorrowPredicted: 'कल की अनुमानित कमाई',
+        confidence: 'विश्वास',
+        perDay: 'प्रति दिन',
+        performanceVsCity: 'शहर से तुलना',
+        analyzing: 'विश्लेषण...',
+        your30DayAvg: 'आपका 30-दिन औसत',
+        vsCityAverage: 'शहर के औसत से',
+        algorithmicHacks: 'एल्गोरिदम हैक्स',
+        loadingInsights: 'इनसाइट्स लोड हो रहीं...',
+        noAlgoInsights: 'अभी आपके शहर के लिए कोई एल्गोरिदम इनसाइट्स नहीं।',
     },
 
     mr: {
@@ -199,6 +325,69 @@ const translations = {
         today: 'आज',
         earnings: 'कमाई',
         balance: 'शिल्लक',
+
+        // Home — Financial Hub
+        financialHub: 'आर्थिक केंद्र',
+        gigScore: 'गिगस्कोर',
+        yourCreditProfile: 'तुमची क्रेडिट प्रोफाइल',
+        microSavings: 'सूक्ष्म-बचत',
+        goldTargetGullak: 'सोने आणि टार्गेट गुल्लक',
+        emergencyFund: 'आपत्कालीन निधी',
+        instantCashAdvance: 'त्वरित रोख आगाऊ',
+        taxHub: 'कर केंद्र',
+        claimTdsRefund: 'TDS परतावा मिळवा',
+
+        // Home — SMS widget
+        smsTransactions: 'SMS व्यवहार',
+        reSync: 'पुन्हा-सिंक',
+        syncing: 'सिंक होत आहे...',
+        newTransactions: 'नवीन व्यवहार',
+        lastSyncAt: 'शेवटचा सिंक',
+        tapToView: 'पाहण्यासाठी टॅप करा',
+
+        // Earning Widget
+        todaysEarnings: 'आजची कमाई',
+        vsYesterday: 'काल च्या तुलनेत',
+
+        // Action Grid
+        scanPay: 'स्कॅन आणि पे',
+        bankTransfer: 'बँक ट्रान्सफर',
+        recharge: 'रिचार्ज',
+        offers: 'ऑफर्स',
+
+        // Wallet
+        passbook: 'पासबुक',
+        earningsAndWithdrawals: 'तुमची कमाई आणि काढणे',
+        zeroInterestAdvance: '0% आगाऊ',
+        emergency: 'आपत्कालीन',
+        autoStash: 'ऑटो-बचत',
+        platformEarning: 'प्लॅटफॉर्म कमाई',
+        instantWithdrawal: 'त्वरित काढणे',
+        escrowNotice: 'तुमचे निधी नियमित मास्टर एस्क्रो खात्यात सुरक्षितपणे ठेवले आहेत। त्वरित काढणे 60 सेकंदात पूर्ण होते.',
+
+        // Insights
+        insightsAnalytics: 'इनसाइट्स आणि विश्लेषण',
+        aiPoweredForecast: 'AI-संचालित कमाई अंदाज',
+        taxAssistant: 'कर सहाय्यक',
+        taxAssistantDesc: 'धारा 44AD कॅल्क्युलेटर, वजावट आणि ITR फाइलिंग',
+        forecastEarnings: 'कमाईचा अंदाज',
+        checkingData: 'डेटा तपासत आहे...',
+        dataLoaded: '✅ कमाई डेटा लोड — तुम्ही थेट अंदाज लावू शकता.',
+        uploadCsvPrompt: 'सुरू करण्यासाठी तुमची प्लॅटफॉर्म कमाई CSV अपलोड करा.',
+        uploading: 'अपलोड होत आहे...',
+        uploadEarningsCsv: 'कमाई CSV अपलोड करा',
+        predicting: 'अंदाज लावत आहे...',
+        forecastTomorrow: 'उद्याच्या कमाईचा अंदाज',
+        tomorrowPredicted: 'उद्याची अंदाजित कमाई',
+        confidence: 'विश्वास',
+        perDay: 'प्रति दिन',
+        performanceVsCity: 'शहराशी तुलना',
+        analyzing: 'विश्लेषण...',
+        your30DayAvg: 'तुमचे 30-दिवस सरासरी',
+        vsCityAverage: 'शहर सरासरीशी',
+        algorithmicHacks: 'अल्गोरिदम हॅक्स',
+        loadingInsights: 'इनसाइट्स लोड होत आहेत...',
+        noAlgoInsights: 'सध्या तुमच्या शहरासाठी कोणतीही अल्गोरिदम इनसाइट्स नाहीत.',
     },
 };
 

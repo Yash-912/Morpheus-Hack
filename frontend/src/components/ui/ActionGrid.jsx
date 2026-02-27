@@ -1,14 +1,17 @@
 import { QrCode, ArrowRightLeft, Percent, Smartphone } from 'lucide-react';
 import { cn } from './Button';
-
-const actions = [
-    { id: 'scan', icon: QrCode, label: 'Scan & Pay', color: 'bg-[#E9FAA0]' },
-    { id: 'transfer', icon: ArrowRightLeft, label: 'Bank Transfer', color: 'bg-[#BFDBFE]' },
-    { id: 'recharge', icon: Smartphone, label: 'Recharge', color: 'bg-[#FED7AA]' },
-    { id: 'offers', icon: Percent, label: 'Offers', color: 'bg-[#FCA5A5]' }
-];
+import { useLanguage } from '../../context/LanguageContext';
 
 export const ActionGrid = ({ className }) => {
+    const { t } = useLanguage();
+
+    const actions = [
+        { id: 'scan', icon: QrCode, label: t('scanPay'), color: 'bg-[#E9FAA0]' },
+        { id: 'transfer', icon: ArrowRightLeft, label: t('bankTransfer'), color: 'bg-[#BFDBFE]' },
+        { id: 'recharge', icon: Smartphone, label: t('recharge'), color: 'bg-[#FED7AA]' },
+        { id: 'offers', icon: Percent, label: t('offers'), color: 'bg-[#FCA5A5]' }
+    ];
+
     return (
         <div className={cn("grid grid-cols-4 gap-3", className)}>
             {actions.map((action) => {

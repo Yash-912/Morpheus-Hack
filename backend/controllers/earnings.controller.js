@@ -310,7 +310,7 @@ const earningsController = {
 
         if (platform && match) {
           const matchedAmountStr = match[1] || match[2];
-          amount = Math.round(parseFloat(matchedAmountStr) * 100); // convert to paise
+          amount = Math.round(parseFloat(matchedAmountStr)); // store as rupees (NOT paise)
 
           if (amount > 0) {
             // Create Earning record

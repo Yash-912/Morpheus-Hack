@@ -9,7 +9,7 @@ import { Card, ActionCard } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import SMSPermission from '../components/expenses/SMSPermission';
-import { ArrowRight, Flame, Gauge, PiggyBank, Zap, FileText } from 'lucide-react';
+import { ArrowRight, Flame, Gauge, PiggyBank, Zap, FileText, MessageSquare, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useLanguage } from '../context/LanguageContext';
@@ -20,7 +20,7 @@ const Home = () => {
     const navigate = useNavigate();
 
     // SMS auto-sync
-    const { hasPermission, grantPermission, isSyncing, syncResult } = useSmsSync();
+    const { hasPermission, grantPermission, isSyncing, syncResult, lastSync, triggerSync } = useSmsSync();
 
     // Fetch live community jobs around Bengaluru center for demo
     const { nearbyJobs, isLoadingNearby } = useCommunity(12.9716, 77.5946, 50);
@@ -66,6 +66,44 @@ const Home = () => {
                 />
             </section>
 
+            {/* SMS Sync Status */}
+            {hasPermission && (
+                <section>
+                    <Card
+                        className="p-3 flex items-center justify-between cursor-pointer hover:bg-blue-50/50 transition-colors"
+                        onClick={() => navigate('/sms-transactions')}
+                    >
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <MessageSquare size={16} className="text-blue-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-dm-sans font-semibold text-gigpay-navy">{t('smsTransactions')}</p>
+                                <p className="text-[10px] text-gigpay-text-muted font-dm-sans">
+                                    {isSyncing ? t('syncing') :
+                                        syncResult?.processing?.created > 0 ? `${syncResult.processing.created} ${t('newTransactions')}` :
+                                            lastSync ? `${t('lastSyncAt')} ${new Date(lastSync).toLocaleTimeString('en-IN', { hour: 'numeric', minute: '2-digit', hour12: true })}` :
+                                                t('tapToView')}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {isSyncing ? (
+                                <Loader2 size={14} className="text-blue-500 animate-spin" />
+                            ) : (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); triggerSync().then(r => r?.synced > 0 && toast.success(`📲 ${r.synced} SMS synced`)); }}
+                                    className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-600 text-[10px] font-dm-sans font-semibold hover:bg-blue-100 transition-all"
+                                >
+                                    {t('reSync')}
+                                </button>
+                            )}
+                            <ArrowRight size={14} className="text-gigpay-text-muted" />
+                        </div>
+                    </Card>
+                </section>
+            )}
+
             {/* Quick Actions */}
             <section>
                 <h2 className="text-heading-md mb-3">{t('quickActions')}</h2>
@@ -74,7 +112,7 @@ const Home = () => {
 
             {/* Financial Hub */}
             <section>
-                <h2 className="text-heading-md mb-3">Financial Hub</h2>
+                <h2 className="text-heading-md mb-3">{t('financialHub')}</h2>
                 <div className="grid grid-cols-2 gap-3">
                     <Card
                         onClick={() => navigate('/gigscore')}
@@ -83,8 +121,8 @@ const Home = () => {
                         <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center mb-2">
                             <Gauge size={20} className="text-indigo-600" />
                         </div>
-                        <h3 className="text-sm font-bold text-gigpay-navy">GigScore</h3>
-                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Your credit profile</p>
+                        <h3 className="text-sm font-bold text-gigpay-navy">{t('gigScore')}</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">{t('yourCreditProfile')}</p>
                     </Card>
                     <Card
                         onClick={() => navigate('/microsavings')}
@@ -93,8 +131,8 @@ const Home = () => {
                         <div className="w-9 h-9 rounded-lg bg-yellow-100 flex items-center justify-center mb-2">
                             <PiggyBank size={20} className="text-yellow-600" />
                         </div>
-                        <h3 className="text-sm font-bold text-gigpay-navy">Micro-Savings</h3>
-                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Gold & Target Gullak</p>
+                        <h3 className="text-sm font-bold text-gigpay-navy">{t('microSavings')}</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">{t('goldTargetGullak')}</p>
                     </Card>
                     <Card
                         onClick={() => navigate('/credit')}
@@ -103,8 +141,8 @@ const Home = () => {
                         <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center mb-2">
                             <Zap size={20} className="text-green-600" />
                         </div>
-                        <h3 className="text-sm font-bold text-gigpay-navy">Emergency Fund</h3>
-                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Instant cash advance</p>
+                        <h3 className="text-sm font-bold text-gigpay-navy">{t('emergencyFund')}</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">{t('instantCashAdvance')}</p>
                     </Card>
                     <Card
                         onClick={() => navigate('/tax-hub')}
@@ -113,8 +151,8 @@ const Home = () => {
                         <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center mb-2">
                             <FileText size={20} className="text-purple-600" />
                         </div>
-                        <h3 className="text-sm font-bold text-gigpay-navy">Tax Hub</h3>
-                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Claim TDS refund</p>
+                        <h3 className="text-sm font-bold text-gigpay-navy">{t('taxHub')}</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">{t('claimTdsRefund')}</p>
                     </Card>
                 </div>
             </section>
@@ -158,7 +196,7 @@ const Home = () => {
 
             {/* Testing Neobrutalist Button Component */}
             <section className="mb-8">
-                <h2 className="text-heading-md mb-3">Cashout (PRD Test)</h2>
+                <h2 className="text-heading-md mb-3">{t('cashout')}</h2>
                 <Card className="flex flex-col gap-4 items-center bg-[#E5E9DF] border-gigpay-border/50 shadow-none">
                     <p className="text-body-md text-gigpay-text-secondary text-center mb-1">
                         Tap the button below to see the 3px 3px 0px shadow collapse physically on press.

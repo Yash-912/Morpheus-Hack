@@ -30,8 +30,8 @@ const Wallet = () => {
         <div className="flex flex-col gap-6 animate-fade-in">
             {/* Header */}
             <div>
-                <h1 className="text-display-sm font-syne font-bold text-gigpay-navy mb-1">Passbook</h1>
-                <p className="text-body-md text-gigpay-text-secondary">Your earnings and withdrawals</p>
+                <h1 className="text-display-sm font-syne font-bold text-gigpay-navy mb-1">{t('passbook')}</h1>
+                <p className="text-body-md text-gigpay-text-secondary">{t('earningsAndWithdrawals')}</p>
             </div>
 
             {/* Balance Card Section */}
@@ -78,14 +78,14 @@ const Wallet = () => {
                     <div className="w-10 h-10 rounded-full bg-[#FFD166]/20 text-[#FFD166] flex items-center justify-center mb-2">
                         <Zap size={20} className="fill-current" />
                     </div>
-                    <h4 className="font-bold text-gigpay-navy text-xs sm:text-sm">Loans</h4>
-                    <p className="text-[10px] sm:text-xs text-gigpay-text-secondary mt-1">0% Advance</p>
+                    <h4 className="font-bold text-gigpay-navy text-xs sm:text-sm">{t('loans')}</h4>
+                    <p className="text-[10px] sm:text-xs text-gigpay-text-secondary mt-1">{t('zeroInterestAdvance')}</p>
                 </div>
                 <div onClick={() => navigate('/credit')} className="bg-white p-3 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
                     <div className="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center mb-2">
                         <ShieldAlert size={20} />
                     </div>
-                    <h4 className="font-bold text-gigpay-navy text-xs sm:text-sm">Emergency</h4>
+                    <h4 className="font-bold text-gigpay-navy text-xs sm:text-sm">{t('emergency')}</h4>
                     <p className="text-[10px] sm:text-xs text-gigpay-text-secondary mt-1">₹500-5k</p>
                 </div>
                 <div onClick={() => navigate('/savings')} className="bg-white p-3 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
@@ -93,7 +93,7 @@ const Wallet = () => {
                         <PiggyBank size={20} />
                     </div>
                     <h4 className="font-bold text-gigpay-navy text-sm">{t('savings')}</h4>
-                    <p className="text-xs text-gigpay-text-secondary mt-1">Auto-stash</p>
+                    <p className="text-xs text-gigpay-text-secondary mt-1">{t('autoStash')}</p>
                 </div>
                 <div onClick={() => navigate('/wallet/insurance')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
                     <div className="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mb-2">
@@ -108,7 +108,7 @@ const Wallet = () => {
             <div className="flex items-center gap-3 bg-gigpay-lime-soft p-4 rounded-xl border border-gigpay-lime">
                 <ShieldCheck size={24} className="text-gigpay-navy shrink-0" />
                 <p className="text-body-sm text-gigpay-navy">
-                    Your funds are held safely in a regulated master escrow account. Instant cashouts clear in under 60 seconds.
+                    {t('escrowNotice')}
                 </p>
             </div>
 
@@ -132,7 +132,7 @@ const Wallet = () => {
                                     </div>
                                     <div>
                                         <p className="text-body-md font-bold text-gigpay-navy">
-                                            {tx.type === 'earning' ? 'Platform Earning' : 'Instant Withdrawal'}
+                                            {tx.type === 'earning' ? t('platformEarning') : t('instantWithdrawal')}
                                         </p>
                                         <p className="text-caption text-gigpay-text-secondary">
                                             {new Date(tx.createdAt).toLocaleDateString()} • {tx.status}

@@ -113,14 +113,14 @@ async function processUnprocessedSms(userId) {
     try {
         // Fetch unprocessed SMS in batches
         while (true) {
-            const batch = await prisma.rawSms.findMany({
+            const batch = await prisma.raw_sms.findMany({
                 where: {
-                    userId,
-                    processedAt: null,
-                    isRelevant: true,
+                    user_id: userId,
+                    processed_at: null,
+                    is_relevant: true,
                 },
                 take: BATCH_SIZE,
-                orderBy: { smsTimestamp: 'asc' },
+                orderBy: { sms_timestamp: 'asc' },
             });
 
             if (batch.length === 0) break;
@@ -128,15 +128,15 @@ async function processUnprocessedSms(userId) {
             for (const sms of batch) {
                 try {
                     // Check if transaction already exists for this SMS
-                    const existing = await prisma.transaction.findUnique({
-                        where: { rawSmsId: sms.id },
+                    const existing = await prisma.transactions.findUnique({
+                        where: { raw_sms_id: sms.id },
                     });
 
                     if (existing) {
                         // Already processed — just mark as processed
-                        await prisma.rawSms.update({
+                        await prisma.raw_sms.update({
                             where: { id: sms.id },
-                            data: { processedAt: new Date() },
+                            data: { processed_at: new Date() },
                         });
                         skipped++;
                         processed++;
@@ -148,23 +148,24 @@ async function processUnprocessedSms(userId) {
 
                     // Create transaction + update RawSms in a transaction
                     await prisma.$transaction([
-                        prisma.transaction.create({
+                        prisma.transactions.create({
                             data: {
-                                userId: sms.userId,
-                                rawSmsId: sms.id,
+                                id: crypto.randomUUID(),
+                                user_id: sms.user_id,
+                                raw_sms_id: sms.id,
                                 amount: parsed.amount,
                                 direction: parsed.direction,
                                 category: parsed.category,
                                 merchant: parsed.merchant,
                                 sender: sms.sender,
-                                smsTimestamp: sms.smsTimestamp,
+                                sms_timestamp: sms.sms_timestamp,
                                 confidence: parsed.confidence,
-                                rawBody: sms.body,
+                                raw_body: sms.body,
                             },
                         }),
-                        prisma.rawSms.update({
+                        prisma.raw_sms.update({
                             where: { id: sms.id },
-                            data: { processedAt: new Date() },
+                            data: { processed_at: new Date() },
                         }),
                     ]);
 
@@ -176,9 +177,9 @@ async function processUnprocessedSms(userId) {
                         try {
                             const platform = detectPlatform(sms.sender);
                             await upsertDailyEarning(
-                                sms.userId,
+                                sms.user_id,
                                 platform,
-                                sms.smsTimestamp,
+                                sms.sms_timestamp,
                                 parsed.amount,
                                 parsed.tripsCount || null,
                             );
@@ -191,9 +192,9 @@ async function processUnprocessedSms(userId) {
                 } catch (err) {
                     logger.error(`Failed to process SMS ${sms.id}:`, err);
                     // Mark as processed to avoid infinite loop on bad records
-                    await prisma.rawSms.update({
+                    await prisma.raw_sms.update({
                         where: { id: sms.id },
-                        data: { processedAt: new Date() },
+                        data: { processed_at: new Date() },
                     }).catch(() => { });
                     errors++;
                     processed++;

@@ -1,8 +1,10 @@
 import { Card } from './Card';
 import { SkeletonCard } from './Skeletons';
 import { ArrowUpRight } from 'lucide-react';
+import { useLanguage } from '../../context/LanguageContext';
 
 export const EarningWidget = ({ todayAmount, isLoading, onClick }) => {
+    const { t } = useLanguage();
     if (isLoading) return <SkeletonCard isLoading={true} />;
 
     // Format amount from paise to rupees
@@ -20,7 +22,7 @@ export const EarningWidget = ({ todayAmount, isLoading, onClick }) => {
 
             <div className="relative z-10 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
-                    <span className="text-gigpay-lime-soft font-dm-sans font-semibold text-sm">Today's Earnings</span>
+                    <span className="text-gigpay-lime-soft font-dm-sans font-semibold text-sm">{t('todaysEarnings')}</span>
                     <div className="w-8 h-8 rounded-full bg-[#1A2D5A] flex items-center justify-center">
                         <ArrowUpRight size={18} className="text-gigpay-lime" />
                     </div>
@@ -34,7 +36,7 @@ export const EarningWidget = ({ todayAmount, isLoading, onClick }) => {
 
                 <div className="mt-3 flex items-center gap-2">
                     <div className="bg-[#1A2D5A] px-2 py-1 rounded-md text-[11px] font-dm-sans font-bold text-white border border-gigpay-border/20">
-                        +12% vs Yesterday
+                        +12% {t('vsYesterday')}
                     </div>
                 </div>
             </div>

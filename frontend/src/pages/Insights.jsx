@@ -9,6 +9,7 @@ import api from '../services/api.service';
 import ExpenseEarningsChart from './ExpenseEarningsChart';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
+import { useLanguage } from '../context/LanguageContext';
 
 const formatRupee = (val) => `₹${(val / 100).toFixed(0)}`;
 
@@ -26,6 +27,7 @@ const dummyChartData = [
 const Insights = () => {
     const setActiveTab = useUIStore(state => state.setActiveTab);
     const { performance, algoInsights, isLoadingPerformance, isLoadingAlgo } = useInsights(null, 'bangalore');
+    const { t } = useLanguage();
 
     // ── Forecast state ──────────────────────────────────────────
     const [hasData, setHasData] = useState(false);
@@ -116,8 +118,8 @@ const Insights = () => {
     return (
         <div className="flex flex-col gap-6 animate-fade-in pb-8">
             <header>
-                <h1 className="text-display-sm font-syne font-bold text-gigpay-navy mb-1">Insights & Analytics</h1>
-                <p className="text-body-md text-gigpay-text-secondary">AI-powered earnings forecast</p>
+                <h1 className="text-display-sm font-syne font-bold text-gigpay-navy mb-1">{t('insightsAnalytics')}</h1>
+                <p className="text-body-md text-gigpay-text-secondary">{t('aiPoweredForecast')}</p>
             </header>
 
             {/* ═══════════════════════════════════════════════════
@@ -135,8 +137,8 @@ const Insights = () => {
                         <Calculator size={22} className="text-[#D97706]" />
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-syne font-bold text-gigpay-navy text-sm">Tax Assistant</h3>
-                        <p className="text-xs text-gigpay-text-secondary">Section 44AD calculator, deductions & ITR filing</p>
+                        <h3 className="font-syne font-bold text-gigpay-navy text-sm">{t('taxAssistant')}</h3>
+                        <p className="text-xs text-gigpay-text-secondary">{t('taxAssistantDesc')}</p>
                     </div>
                     <ArrowRight size={18} className="text-gigpay-text-muted" />
                 </div>
@@ -148,14 +150,14 @@ const Insights = () => {
             <section>
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-heading-md flex items-center gap-2">
-                        <Zap size={20} className="text-teal-500" /> Forecast Earnings
+                        <Zap size={20} className="text-teal-500" /> {t('forecastEarnings')}
                     </h2>
                 </div>
 
                 <Card className="bg-white p-5">
                     {checkingData ? (
                         <div className="flex items-center justify-center py-6 text-gigpay-text-muted">
-                            <Loader2 size={20} className="animate-spin mr-2" /> Checking data…
+                            <Loader2 size={20} className="animate-spin mr-2" /> {t('checkingData')}
                         </div>
                     ) : (
                         <div className="flex flex-col gap-4">
@@ -163,8 +165,8 @@ const Insights = () => {
                             <div>
                                 <p className="text-caption text-gigpay-text-secondary mb-2">
                                     {hasData
-                                        ? '✅ Earnings data loaded — you can forecast directly, or upload a new CSV to update.'
-                                        : 'Upload your platform earnings CSV to get started.'}
+                                        ? t('dataLoaded')
+                                        : t('uploadCsvPrompt')}
                                 </p>
 
                                 <label
@@ -176,9 +178,9 @@ const Insights = () => {
                                         }`}
                                 >
                                     {uploading ? (
-                                        <><Loader2 size={16} className="animate-spin" /> Uploading…</>
+                                        <><Loader2 size={16} className="animate-spin" /> {t('uploading')}</>
                                     ) : (
-                                        <><Upload size={16} /> Upload Earnings CSV</>
+                                        <><Upload size={16} /> {t('uploadEarningsCsv')}</>
                                     )}
                                 </label>
                                 <input
@@ -215,9 +217,9 @@ const Insights = () => {
                                         }`}
                                 >
                                     {predicting ? (
-                                        <><Loader2 size={16} className="animate-spin" /> Predicting…</>
+                                        <><Loader2 size={16} className="animate-spin" /> {t('predicting')}</>
                                     ) : (
-                                        <><Zap size={16} /> Forecast Tomorrow's Earnings</>
+                                        <><Zap size={16} /> {t('forecastTomorrow')}</>
                                     )}
                                 </button>
                             )}
@@ -233,7 +235,7 @@ const Insights = () => {
                             {forecast && (
                                 <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5 mt-1">
                                     <p className="text-caption text-teal-700 font-semibold mb-1">
-                                        Tomorrow's Predicted Earnings
+                                        {t('tomorrowPredicted')}
                                     </p>
                                     <h3 className="text-display-sm font-bold text-gigpay-navy mb-3">
                                         ₹{forecast.predicted_earnings_rupees?.toLocaleString('en-IN', {
@@ -249,10 +251,10 @@ const Insights = () => {
                                                         : 'default'
                                             }
                                         >
-                                            {(forecast.confidence * 100).toFixed(0)}% confidence
+                                            {(forecast.confidence * 100).toFixed(0)}% {t('confidence')}
                                         </Badge>
                                         <span className="text-caption text-gigpay-text-secondary">
-                                            ≈ ₹{Math.round(forecast.predicted_earnings_rupees)} per day
+                                            ≈ ₹{Math.round(forecast.predicted_earnings_rupees)} {t('perDay')}
                                         </span>
                                     </div>
                                 </div>
@@ -266,18 +268,18 @@ const Insights = () => {
             <section>
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-heading-md flex items-center gap-2">
-                        <Activity size={20} className="text-gigpay-lime" /> Performance vs City
+                        <Activity size={20} className="text-gigpay-lime" /> {t('performanceVsCity')}
                     </h2>
                 </div>
 
                 <Card className="bg-white p-4">
                     {isLoadingPerformance ? (
-                        <div className="h-40 flex items-center justify-center text-gigpay-text-muted">Analyzing...</div>
+                        <div className="h-40 flex items-center justify-center text-gigpay-text-muted">{t('analyzing')}</div>
                     ) : (
                         <>
                             <div className="flex justify-between items-end mb-6">
                                 <div>
-                                    <p className="text-caption text-gigpay-text-secondary mb-1">Your 30-Day Avg</p>
+                                    <p className="text-caption text-gigpay-text-secondary mb-1">{t('your30DayAvg')}</p>
                                     <h3 className="text-display-sm font-bold text-gigpay-navy">
                                         {formatRupee(performance?.user?.avgPerEntry || 0)}
                                     </h3>
@@ -288,7 +290,7 @@ const Insights = () => {
                                         {Math.abs(performance?.comparison?.percentVsCity || 0)}%
                                     </Badge>
                                     <p className="text-caption text-gigpay-text-secondary">
-                                        vs City Average
+                                        {t('vsCityAverage')}
                                     </p>
                                 </div>
                             </div>
@@ -320,14 +322,14 @@ const Insights = () => {
             <section>
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-heading-md flex items-center gap-2">
-                        <Lightbulb size={20} className="text-[#FFD166]" fill="#FFD166" /> Algorithmic Hacks
+                        <Lightbulb size={20} className="text-[#FFD166]" fill="#FFD166" /> {t('algorithmicHacks')}
                     </h2>
-                    <Button variant="ghost" size="ghost" className="pe-0" onClick={() => navigate('/insights/algo')}>See All <ArrowRight size={16} className="ml-1" /></Button>
+                    <Button variant="ghost" size="ghost" className="pe-0" onClick={() => navigate('/insights/algo')}>{t('seeAll')} <ArrowRight size={16} className="ml-1" /></Button>
                 </div>
 
                 <div className="flex flex-col gap-3">
                     {isLoadingAlgo ? (
-                        <Card className="p-4 text-center text-gigpay-text-muted">Loading insights...</Card>
+                        <Card className="p-4 text-center text-gigpay-text-muted">{t('loadingInsights')}</Card>
                     ) : algoInsights && algoInsights.length > 0 ? (
                         algoInsights.map((insight) => (
                             <Card key={insight.id} className="p-4 bg-[#FFFAEB] border-[#FFD166]">
@@ -347,7 +349,7 @@ const Insights = () => {
                     ) : (
                         <Card className="p-6 text-center">
                             <Lightbulb size={32} className="mx-auto text-gigpay-neutral-300 mb-2" />
-                            <p className="text-body-md text-gigpay-text-secondary">No algorithmic insights found for your city right now.</p>
+                            <p className="text-body-md text-gigpay-text-secondary">{t('noAlgoInsights')}</p>
                         </Card>
                     )}
                 </div>

@@ -31,6 +31,9 @@ function parseSms(sender, body) {
     // Fix direction for INCOME if needed
     const finalDirection = category === 'INCOME' ? 'credit' : direction;
 
+    // ── STEP 7: Extract date from body ──
+    const parsedDate = extractDate(body);
+
     return {
         amount: amount || 0,
         direction: finalDirection,
@@ -38,6 +41,7 @@ function parseSms(sender, body) {
         merchant,
         confidence,
         tripsCount,
+        parsedDate,
     };
 }
 
@@ -96,7 +100,10 @@ function determineDirection(upper, senderUpper) {
 
 // ── Category Detection ─────────────────────────────────────
 
-const GIG_PLATFORMS = ['ZOMATO', 'SWIGGY', 'OLARIDE', 'UBERIND', 'DUNZOW', 'BLINKT', 'ZEPTON'];
+const GIG_PLATFORMS = [
+    'ZOMATO', 'SWIGGY', 'OLARIDE', 'UBERIND', 'DUNZOW', 'BLINKT', 'ZEPTON',
+    'BIGBAS', 'RAPIDO', 'PORTER', 'URBANC', 'FKQCOM', 'AMZFLX', 'JIOMRT',
+];
 const INCOME_BODY_KEYWORDS = ['CREDITED', 'PAID OUT', 'WEEKLY PAYMENT', 'EARNINGS', 'TRANSFERRED', 'PAYOUT', 'EARNED'];
 const FOOD_KEYWORDS = ['RESTAURANT', 'HOTEL', 'CAFE', 'PIZZA', 'BURGER', 'BIRYANI', 'DOMINOS', 'MCDONALDS', 'KFC', 'SUBWAY', 'FOOD', 'ORDER'];
 const FUEL_KEYWORDS = ['PETROL', 'PETROLEUM', 'DIESEL', 'FUEL', 'IOCL', 'BPCL', 'NAYARA', 'SHELL', 'HP PUMP', 'HINDUSTAN PETROLEUM', 'BHARAT PETROLEUM'];
@@ -189,7 +196,10 @@ function determineCategory(senderUpper, upper, direction) {
 const KNOWN_MERCHANTS = {
     ZOMATO: 'Zomato', SWIGGY: 'Swiggy', OLARIDE: 'Ola',
     UBERIND: 'Uber', DUNZOW: 'Dunzo', BLINKT: 'Blinkit',
-    ZEPTON: 'Zepto', HDFCBK: 'HDFC Bank', ICICIB: 'ICICI Bank',
+    ZEPTON: 'Zepto', BIGBAS: 'BigBasket', RAPIDO: 'Rapido',
+    PORTER: 'Porter', URBANC: 'Urban Company', FKQCOM: 'Flipkart Quick',
+    AMZFLX: 'Amazon Flex', JIOMRT: 'JioMart Partner',
+    HDFCBK: 'HDFC Bank', ICICIB: 'ICICI Bank',
     SBIINB: 'SBI', AXISBK: 'Axis Bank', KOTAKB: 'Kotak Bank',
     GPAY: 'Google Pay', PHONEPE: 'PhonePe', PYTMBN: 'Paytm',
     AIRTEL: 'Airtel', JIOTEL: 'Jio',
@@ -251,5 +261,29 @@ function extractTripsCount(body) {
     return null;
 }
 
-module.exports = { parseSms };
-// Export for testing: parseSms is the main entry point
+// ── Date Extraction from SMS Body ─────────────────────────
+
+function extractDate(body) {
+    const patterns = [
+        // DD-MM-YY or DD/MM/YY or DD-MM-YYYY
+        /(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/,
+        // 27 Feb 2026, 27 February 2026
+        /(\d{1,2})\s+(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{2,4})/i,
+        // Feb 27, 2026
+        /(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+(\d{1,2}),?\s+(\d{2,4})/i,
+    ];
+
+    for (const pattern of patterns) {
+        const match = body.match(pattern);
+        if (match) {
+            try {
+                const parsed = new Date(match[0].replace(/\//g, '-'));
+                if (!isNaN(parsed.getTime())) return parsed;
+            } catch (_) { /* skip invalid */ }
+        }
+    }
+    return null;
+}
+
+module.exports = { parseSms, extractDate };
+// Export for testing: parseSms + extractDate are the main entry points

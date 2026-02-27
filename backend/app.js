@@ -4,6 +4,11 @@
 
 require('dotenv').config();
 
+// Global BigInt JSON serialization fix
+BigInt.prototype.toJSON = function () {
+  return Number(this);
+};
+
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');

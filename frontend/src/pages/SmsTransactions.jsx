@@ -1,8 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
-import { ArrowLeft, TrendingUp, TrendingDown, Filter, Loader2, MessageSquare } from 'lucide-react';
+import { ArrowLeft, TrendingUp, TrendingDown, Filter, Loader2, MessageSquare, ClipboardPaste, Send, ChevronDown, ChevronUp } from 'lucide-react';
 import api from '../services/api.service';
+import toast from 'react-hot-toast';
 
 const CATEGORIES = ['All', 'INCOME', 'FOOD', 'FUEL', 'TOLL', 'MOBILE_RECHARGE', 'MAINTENANCE', 'TRANSFER', 'UNKNOWN'];
 
@@ -24,6 +25,10 @@ const SmsTransactions = () => {
     const [summary, setSummary] = React.useState(null);
     const [loading, setLoading] = React.useState(true);
     const [filter, setFilter] = React.useState('All');
+    const [pasteText, setPasteText] = React.useState('');
+    const [pasteSender, setPasteSender] = React.useState('AX-HDFCBK');
+    const [isPasting, setIsPasting] = React.useState(false);
+    const [showPaste, setShowPaste] = React.useState(false);
 
     React.useEffect(() => {
         fetchData();
@@ -42,6 +47,36 @@ const SmsTransactions = () => {
             console.error('Failed to fetch transactions:', e);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handlePasteSubmit = async () => {
+        if (!pasteText.trim()) return;
+        setIsPasting(true);
+        try {
+            // Split by double-newline or treat entire text as one message
+            const lines = pasteText.split(/\n{2,}/).filter(l => l.trim());
+            const messages = lines.map((body) => ({
+                sender: pasteSender,
+                body: body.trim(),
+                timestamp: new Date().toISOString(),
+            }));
+
+            const { data } = await api.post('/sms/sync', {
+                messages,
+                totalScanned: messages.length,
+            });
+
+            const synced = data.synced || data.data?.detected || 0;
+            toast.success(`Processed ${messages.length} SMS → ${synced} new transactions`);
+            setPasteText('');
+            setShowPaste(false);
+            await fetchData(); // Refresh transaction list
+        } catch (e) {
+            console.error('Paste SMS failed:', e);
+            toast.error('Failed to process pasted SMS');
+        } finally {
+            setIsPasting(false);
         }
     };
 
@@ -80,7 +115,60 @@ const SmsTransactions = () => {
                     <ArrowLeft size={24} className="text-gigpay-navy" />
                 </button>
                 <h1 className="font-syne font-bold text-display-sm text-gigpay-navy">Transactions</h1>
+                <button
+                    onClick={() => setShowPaste(!showPaste)}
+                    className="ml-auto flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 text-blue-600 text-xs font-dm-sans font-semibold hover:bg-blue-100 transition-all"
+                >
+                    <ClipboardPaste size={14} />
+                    Paste SMS
+                    {showPaste ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
             </header>
+
+            {/* Paste SMS Panel */}
+            {showPaste && (
+                <Card className="p-4 border-2 border-blue-200 border-dashed bg-blue-50/30">
+                    <div className="flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <label className="text-xs font-dm-sans font-semibold text-gigpay-text-secondary">Sender ID:</label>
+                            <select
+                                value={pasteSender}
+                                onChange={(e) => setPasteSender(e.target.value)}
+                                className="text-xs px-2 py-1 rounded-md border border-gray-300 bg-white font-dm-sans"
+                            >
+                                <option value="AX-HDFCBK">AX-HDFCBK (HDFC)</option>
+                                <option value="VD-ICICIB">VD-ICICIB (ICICI)</option>
+                                <option value="JD-SBIINB">JD-SBIINB (SBI)</option>
+                                <option value="AD-ZOMATO">AD-ZOMATO (Zomato)</option>
+                                <option value="BX-SWIGGY">BX-SWIGGY (Swiggy)</option>
+                                <option value="CP-OLARIDE">CP-OLARIDE (Ola)</option>
+                                <option value="DM-UBERIND">DM-UBERIND (Uber)</option>
+                                <option value="VM-DUNZOW">VM-DUNZOW (Dunzo)</option>
+                                <option value="HP-FASTAG">HP-FASTAG (FASTag)</option>
+                                <option value="JD-GPAY">JD-GPAY (Google Pay)</option>
+                            </select>
+                        </div>
+                        <textarea
+                            value={pasteText}
+                            onChange={(e) => setPasteText(e.target.value)}
+                            placeholder={"Paste SMS messages here...\nSeparate multiple messages with a blank line.\n\nExample:\nRs 1,250.00 debited from A/c XX4523 at PVR Cinemas.\n\nYou earned Rs 1,847.00 today (12 deliveries)."}
+                            rows={5}
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg font-dm-sans resize-none focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+                        />
+                        <button
+                            onClick={handlePasteSubmit}
+                            disabled={isPasting || !pasteText.trim()}
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-gigpay-navy text-white text-sm font-dm-sans font-semibold disabled:opacity-50 hover:bg-opacity-90 transition-all"
+                        >
+                            {isPasting ? (
+                                <><Loader2 size={16} className="animate-spin" /> Processing...</>
+                            ) : (
+                                <><Send size={16} /> Sync Pasted SMS</>
+                            )}
+                        </button>
+                    </div>
+                </Card>
+            )}
 
             {/* Summary Bar */}
             {summary && summary.transaction_count > 0 && (
@@ -127,8 +215,8 @@ const SmsTransactions = () => {
                             key={cat}
                             onClick={() => setFilter(cat)}
                             className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-dm-sans font-semibold transition-all ${active
-                                    ? 'bg-gigpay-navy text-white shadow-sm'
-                                    : 'bg-white text-gigpay-text-secondary border border-gigpay-card-border'
+                                ? 'bg-gigpay-navy text-white shadow-sm'
+                                : 'bg-white text-gigpay-text-secondary border border-gigpay-card-border'
                                 }`}
                         >
                             {cat === 'All' ? 'All' : conf?.label || cat}

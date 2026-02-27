@@ -7,13 +7,17 @@ export const connectSocket = (user) => {
     if (!user) return;
     if (socket) return; // Prevent multiple connections
 
-    const SOCKET_URL = import.meta.env.VITE_API_URL
-        ? import.meta.env.VITE_API_URL.replace('/api', '')
-        : 'http://localhost:5001';
+    const SOCKET_URL = import.meta.env.VITE_SOCKET_URL
+        || (import.meta.env.VITE_API_URL
+            ? import.meta.env.VITE_API_URL.replace('/api', '')
+            : 'http://localhost:5002');
 
     socket = io(SOCKET_URL, {
         withCredentials: true,
-        transports: ['websocket', 'polling']
+        transports: ['websocket', 'polling'],
+        reconnectionAttempts: 5,
+        reconnectionDelay: 5000,
+        timeout: 10000,
     });
 
     socket.on('connect', () => {

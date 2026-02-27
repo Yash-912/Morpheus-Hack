@@ -45,8 +45,23 @@ const authController = {
   async sendOtp(req, res, next) {
     try {
       const { phone } = req.body;
-      await SmsService.sendOtp(phone);
-      res.json({ success: true, message: 'OTP sent successfully' });
+      // Generate 6-digit OTP
+      const otp = String(Math.floor(100000 + Math.random() * 900000));
+      const otpHash = await bcrypt.hash(otp, 10);
+
+      // Store hash + attempts in Redis
+      await redisClient
+        .multi()
+        .hset(`otp_store:${phone}`, 'hash', otpHash, 'attempts', '0')
+        .expire(`otp_store:${phone}`, 10 * 60)
+        .exec();
+
+      // Log OTP to console for development
+      console.log(`\n============================`);
+      console.log(`🔑 DEV OTP for ${phone}: ${otp}`);
+      console.log(`============================\n`);
+
+      res.json({ success: true, message: 'OTP sent successfully (Logged to console)' });
     } catch (error) {
       next(error);
     }
@@ -60,13 +75,27 @@ const authController = {
     try {
       const { phone, otp } = req.body;
 
-      const valid = await SmsService.verifyOtp(phone, otp);
-      if (!valid) {
+      const storeKey = `otp_store:${phone}`;
+      const stored = await redisClient.hgetall(storeKey);
+
+      if (!stored || !stored.hash) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_OTP', message: 'OTP expired or not found. Please request a new one.' },
+        });
+      }
+
+      const match = await bcrypt.compare(otp, stored.hash);
+
+      if (!match) {
         return res.status(400).json({
           success: false,
           error: { code: 'INVALID_OTP', message: 'Invalid OTP. Please try again.' },
         });
       }
+
+      // Verified - cleanup
+      await redisClient.del(storeKey);
 
       // Upsert user
       let user = await prisma.user.findUnique({ where: { phone } });
