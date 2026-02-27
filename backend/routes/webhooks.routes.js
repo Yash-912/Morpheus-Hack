@@ -16,4 +16,10 @@ router.post('/razorpay', webhooksController.razorpay);
 // POST /api/webhooks/whatsapp — WhatsApp / Meta Business API
 router.post('/whatsapp', webhooksController.whatsapp);
 
+// GET /api/webhooks/whatsapp — Meta webhook verification challenge
+router.get('/whatsapp', webhooksController.whatsappVerify);
+
+// POST /api/webhooks/stripe — Stripe payment events
+router.post('/stripe', webhooksController.stripe);
+
 module.exports = router;
