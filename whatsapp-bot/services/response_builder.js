@@ -104,7 +104,7 @@ const ResponseBuilder = {
             logger.debug('Message sent via Twilio', { to: phone.slice(-4) });
             return true;
         } catch (err) {
-            logger.error('Twilio send failed:', err.message);
+            logger.error('Twilio send failed:', err);
             return false;
         }
     },
@@ -146,7 +146,7 @@ const ResponseBuilder = {
     parseIncomingTwilio(body) {
         try {
             if (!body?.Body || !body?.From) return null;
-            const phone = body.From.replace('whatsapp:', '');
+            const phone = body.From.replace('whatsapp:', '').replace(' ', '+');
             return {
                 phone,
                 message: body.Body,

@@ -15,8 +15,8 @@ const LoanCard = ({ loan }) => {
     };
 
     const status = statusConfig[loan.status] || statusConfig.pending;
-    const progress = loan.totalAmount > 0
-        ? Math.min(100, Math.round((Number(loan.repaidAmount || 0) / Number(loan.totalAmount)) * 100))
+    const progress = loan.totalRepayable > 0
+        ? Math.min(100, Math.round((Number(loan.amountRepaid || 0) / Number(loan.totalRepayable)) * 100))
         : 0;
 
     return (
@@ -30,7 +30,7 @@ const LoanCard = ({ loan }) => {
 
             {/* Amount */}
             <p className="text-heading-lg text-gigpay-navy">
-                {formatCurrency(loan.totalAmount)}
+                {formatCurrency(loan.totalRepayable)}
             </p>
             <p className="text-caption text-gigpay-text-muted mb-3">
                 at {((Number(loan.interestRate) || 0) * 100).toFixed(1)}% interest
@@ -41,7 +41,7 @@ const LoanCard = ({ loan }) => {
                 <div className="mb-2">
                     <div className="flex justify-between text-caption mb-1">
                         <span className="text-gigpay-text-secondary">
-                            Repaid: {formatCurrency(loan.repaidAmount || 0)}
+                            Repaid: {formatCurrency(loan.amountRepaid || 0)}
                         </span>
                         <span className="font-semibold text-gigpay-navy">{progress}%</span>
                     </div>
@@ -59,7 +59,7 @@ const LoanCard = ({ loan }) => {
                 <div className="flex justify-between mt-3 pt-3 border-t border-gigpay-border/50">
                     <span className="text-body-md text-gigpay-text-secondary">Outstanding</span>
                     <span className="text-body-md font-bold text-red-600">
-                        {formatCurrency(Number(loan.totalAmount) - Number(loan.repaidAmount || 0))}
+                        {formatCurrency(Number(loan.totalRepayable) - Number(loan.amountRepaid || 0))}
                     </span>
                 </div>
             )}

@@ -4,7 +4,7 @@
 // ============================================================
 
 const axios = require('axios');
-const prisma = require('../config/database');
+const { prisma } = require('../config/database');
 const logger = require('../utils/logger.utils');
 
 // Platform API base URLs (would come from env in production)
@@ -125,7 +125,7 @@ const PlatformService = {
     }
 
     const accounts = await prisma.platformAccount.findMany({
-      where: { userId, connected: true },
+      where: { userId, isActive: true },
     });
 
     const results = { synced: [], failed: [], needsScreenshot: [] };
@@ -153,28 +153,16 @@ const PlatformService = {
         continue;
       }
 
-      // Upsert the earning record
-      await prisma.earning.upsert({
-        where: {
-          userId_platform_date: {
-            userId,
-            platform: account.platform,
-            date: new Date(date),
-          },
-        },
-        update: {
-          amount: BigInt(earnings.amount),
-          trips: earnings.trips,
-          onlineHours: earnings.onlineHours,
-          source: 'api',
-        },
-        create: {
+      // Create the earning record (no compound unique, so just create)
+      await prisma.earning.create({
+        data: {
           userId,
           platform: account.platform,
           date: new Date(date),
-          amount: BigInt(earnings.amount),
-          trips: earnings.trips,
-          onlineHours: earnings.onlineHours,
+          grossAmount: BigInt(earnings.amount),
+          netAmount: BigInt(earnings.amount),
+          tripsCount: earnings.trips,
+          hoursWorked: earnings.onlineHours,
           source: 'api',
         },
       });

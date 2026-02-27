@@ -5,7 +5,7 @@
 const cron = require('node-cron');
 const { prisma } = require('../../config/database');
 const { notificationQueue } = require('../queues');
-const { formatCurrency, getFY } = require('../../utils/formatters.utils');
+const { formatCurrency } = require('../../utils/formatters.utils');
 const logger = require('../../utils/logger.utils');
 
 /**
@@ -54,13 +54,13 @@ async function sendEarningsDigest() {
       where: {
         date: { gte: yesterday, lte: endOfYesterday },
       },
-      _sum: { amount: true },
+      _sum: { netAmount: true },
       _count: true,
     });
 
     let sent = 0;
     for (const entry of earningsByUser) {
-      const totalEarnings = Number(entry._sum.amount || 0);
+      const totalEarnings = Number(entry._sum.netAmount || 0);
       if (totalEarnings <= 0) continue;
 
       await notificationQueue.add({
@@ -108,7 +108,7 @@ async function sendTaxReminders() {
 
     // Get all active users
     const activeUsers = await prisma.user.findMany({
-      where: { status: 'active' },
+      where: { isActive: true },
       select: { id: true },
       take: 10000,
     });
@@ -143,7 +143,7 @@ async function sendInsuranceExpiryAlerts() {
     const expiringPolicies = await prisma.insurancePolicy.findMany({
       where: {
         status: 'active',
-        expiresAt: { gte: now, lte: sevenDaysFromNow },
+        validTo: { gte: now, lte: sevenDaysFromNow },
       },
       include: {
         user: { select: { id: true } },
@@ -152,7 +152,7 @@ async function sendInsuranceExpiryAlerts() {
 
     for (const policy of expiringPolicies) {
       const daysLeft = Math.ceil(
-        (policy.expiresAt.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
+        (policy.validTo.getTime() - now.getTime()) / (24 * 60 * 60 * 1000)
       );
 
       await notificationQueue.add({

@@ -36,7 +36,7 @@ const loansController = {
           amount: Number(loan.amount),
           totalRepayable: Number(loan.totalRepayable),
           interestRate: loan.interestRate,
-          repaymentPercent: loan.repaymentPercent,
+          autoDeductPercent: loan.autoDeductPercent,
           dueDate: loan.dueDate,
           status: loan.status,
         },
@@ -60,10 +60,10 @@ const loansController = {
         ...l,
         amount: Number(l.amount),
         totalRepayable: Number(l.totalRepayable),
-        repaidAmount: Number(l.repaidAmount),
-        remaining: Number(l.totalRepayable) - Number(l.repaidAmount),
+        amountRepaid: Number(l.amountRepaid),
+        remaining: Number(l.totalRepayable) - Number(l.amountRepaid),
         progressPercent: Math.round(
-          (Number(l.repaidAmount) / Number(l.totalRepayable)) * 100
+          (Number(l.amountRepaid) / Number(l.totalRepayable)) * 100
         ),
       }));
 
@@ -96,7 +96,7 @@ const loansController = {
         ...l,
         amount: Number(l.amount),
         totalRepayable: Number(l.totalRepayable),
-        repaidAmount: Number(l.repaidAmount),
+        amountRepaid: Number(l.amountRepaid),
       }));
 
       res.json({

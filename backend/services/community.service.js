@@ -31,8 +31,8 @@ const CommunityService = {
           cj."location"::geography,
           ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography
         ) AS distance_meters
-      FROM "CommunityJob" cj
-      JOIN "User" u ON u."id" = cj."postedBy"
+      FROM "community_jobs" cj
+      JOIN "users" u ON u."id" = cj."posted_by"
       WHERE cj."status" = 'open'
         AND ST_DWithin(
           cj."location"::geography,
@@ -94,12 +94,12 @@ const CommunityService = {
       // Create job with PostGIS point
       const job = await tx.$queryRawUnsafe(
         `
-        INSERT INTO "CommunityJob" (
-          "id", "postedBy", "title", "description", "type",
-          "budget", "escrowAmount", "status", "location", "createdAt", "updatedAt"
+        INSERT INTO "community_jobs" (
+          "id", "posted_by", "title", "description", "type",
+          "offered_price", "status", "location", "created_at", "updated_at"
         ) VALUES (
           gen_random_uuid(), $1, $2, $3, $4,
-          $5, $5, 'open',
+          $5, 'open',
           ST_SetSRID(ST_MakePoint($6, $7), 4326),
           NOW(), NOW()
         )
@@ -147,7 +147,7 @@ const CommunityService = {
       throw error;
     }
 
-    if (job.postedBy === workerId) {
+    if (job.postedById === workerId) {
       const error = new Error('Cannot accept your own job');
       error.statusCode = 400;
       throw error;
@@ -156,7 +156,7 @@ const CommunityService = {
     const updated = await prisma.communityJob.update({
       where: { id: jobId },
       data: {
-        acceptedBy: workerId,
+        assignedToId: workerId,
         status: 'assigned',
       },
     });
@@ -181,7 +181,7 @@ const CommunityService = {
       throw error;
     }
 
-    if (job.postedBy !== customerId) {
+    if (job.postedById !== customerId) {
       const error = new Error('Only the job poster can confirm completion');
       error.statusCode = 403;
       throw error;
@@ -193,7 +193,7 @@ const CommunityService = {
       throw error;
     }
 
-    const escrow = Number(job.escrowAmount);
+    const escrow = Number(job.offeredPrice);
     const platformFee = Math.round(escrow * COMMUNITY_PLATFORM_FEE);
     const workerPayout = escrow - platformFee;
 
@@ -201,7 +201,7 @@ const CommunityService = {
     await prisma.$transaction(async (tx) => {
       // Credit worker wallet
       await tx.user.update({
-        where: { id: job.acceptedBy },
+        where: { id: job.assignedToId },
         data: { walletBalance: { increment: BigInt(workerPayout) } },
       });
 
@@ -210,7 +210,6 @@ const CommunityService = {
         where: { id: jobId },
         data: {
           status: 'completed',
-          completedAt: new Date(),
         },
       });
     });
@@ -240,7 +239,7 @@ const CommunityService = {
       throw error;
     }
 
-    if (job.postedBy !== reporterId && job.acceptedBy !== reporterId) {
+    if (job.postedById !== reporterId && job.assignedToId !== reporterId) {
       const error = new Error('Only parties involved in the job can file a dispute');
       error.statusCode = 403;
       throw error;

@@ -36,7 +36,7 @@ notificationQueue.process(5, async (job) => {
             type: notification.type || 'system',
             title: notification.title,
             body: notification.body,
-            channel: 'in_app',
+            channels: ['in_app'],
             data: notification.data || {},
           },
         });

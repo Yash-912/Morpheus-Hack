@@ -43,7 +43,7 @@ const notificationsController = {
   async unreadCount(req, res, next) {
     try {
       const count = await prisma.notification.count({
-        where: { userId: req.user.id, read: false },
+        where: { userId: req.user.id, readAt: null },
       });
 
       res.json({ success: true, data: { unreadCount: count } });
@@ -62,16 +62,16 @@ const notificationsController = {
 
       if (all) {
         const result = await prisma.notification.updateMany({
-          where: { userId: req.user.id, read: false },
-          data: { read: true, readAt: new Date() },
+          where: { userId: req.user.id, readAt: null },
+          data: { readAt: new Date() },
         });
         return res.json({ success: true, data: { marked: result.count } });
       }
 
       if (ids && ids.length > 0) {
         const result = await prisma.notification.updateMany({
-          where: { id: { in: ids }, userId: req.user.id, read: false },
-          data: { read: true, readAt: new Date() },
+          where: { id: { in: ids }, userId: req.user.id, readAt: null },
+          data: { readAt: new Date() },
         });
         return res.json({ success: true, data: { marked: result.count } });
       }

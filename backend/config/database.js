@@ -1,28 +1,44 @@
 // ============================================================
-// Prisma Client Singleton — PostgreSQL connection via Prisma
+// Prisma Client Singleton — PostgreSQL via Neon Serverless (WebSocket)
+// Bypasses ISP/network TCP port blocking by using WebSockets
 // ============================================================
 
+const { Pool, neonConfig } = require('@neondatabase/serverless');
+const { PrismaNeon } = require('@prisma/adapter-neon');
 const { PrismaClient } = require('@prisma/client');
-const { execSync } = require('child_process');
+const ws = require('ws');
+
+// Tell Neon serverless to use WebSocket transport via the `ws` package
+neonConfig.webSocketConstructor = ws;
+// Use the secure WebSocket proxy endpoint provided by Neon
+neonConfig.useSecureWebSocket = true;
+// Patch fetch to use global fetch (node 18+) for DNS-over-HTTPS resolution
+neonConfig.pipelineTLS = false;
+neonConfig.pipelineConnect = false;
 
 let prisma;
 
-if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient({
-    log: ['error', 'warn'],
-    datasources: {
-      db: { url: process.env.DATABASE_URL },
-    },
+function createPrismaClient(logLevel) {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error('DATABASE_URL environment variable is not set');
+  }
+
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaNeon(pool);
+
+  return new PrismaClient({
+    adapter,
+    log: logLevel,
   });
+}
+
+if (process.env.NODE_ENV === 'production') {
+  prisma = createPrismaClient(['error', 'warn']);
 } else {
   // Prevent multiple instances during hot-reload in development
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient({
-      log: ['query', 'info', 'warn', 'error'],
-      datasources: {
-        db: { url: process.env.DATABASE_URL },
-      },
-    });
+    global.__prisma = createPrismaClient(['query', 'info', 'warn', 'error']);
   }
   prisma = global.__prisma;
 }
@@ -33,11 +49,13 @@ if (process.env.NODE_ENV === 'production') {
  */
 async function connectDatabase() {
   try {
-    await prisma.$connect();
-    console.log('✅ PostgreSQL connected via Prisma');
+    // Verify connection by running a simple query
+    await prisma.$queryRaw`SELECT 1 AS connected`;
+    console.log('✅ PostgreSQL connected via Neon Serverless (WebSocket)');
 
     // Run pending migrations in production
     if (process.env.NODE_ENV === 'production') {
+      const { execSync } = require('child_process');
       console.log('🔄 Running prisma migrate deploy...');
       execSync('npx prisma migrate deploy', { stdio: 'inherit' });
       console.log('✅ Migrations applied');

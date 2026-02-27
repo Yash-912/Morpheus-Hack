@@ -2,8 +2,7 @@
 // Forecast Controller — CSV upload, storage, and ML prediction
 // ============================================================
 
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const { prisma } = require('../config/database');
 const logger = require('../utils/logger.utils');
 const axios = require('axios');
 const FormData = require('form-data');

@@ -2,8 +2,14 @@
 // Notification Service — Multi-channel dispatch (FCM, WhatsApp, in-app)
 // ============================================================
 
-const { fcmMessaging } = require('../config/firebase');
-const prisma = require('../config/database');
+let fcmMessaging = null;
+try {
+  const firebase = require('../config/firebase');
+  fcmMessaging = firebase?.fcmMessaging || null;
+} catch (e) {
+  // Firebase not configured
+}
+const { prisma } = require('../config/database');
 const logger = require('../utils/logger.utils');
 const WhatsAppService = require('./whatsapp.service');
 const { formatCurrency } = require('../utils/formatters.utils');
@@ -97,7 +103,7 @@ const NotificationService = {
           type: type || 'system',
           title,
           body,
-          channel: 'in_app',
+          channels: ['in_app'],
           data,
         },
       });

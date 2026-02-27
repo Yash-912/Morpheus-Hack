@@ -87,7 +87,7 @@ const Loans = () => {
 
                         <div className="mb-4">
                             <div className="flex justify-between text-caption text-gigpay-text-secondary mb-1">
-                                <span>Repaid: ₹{activeLoan.repaidAmount / 100}</span>
+                                <span>Repaid: ₹{activeLoan.amountRepaid / 100}</span>
                                 <span>Total: ₹{activeLoan.totalRepayable / 100}</span>
                             </div>
                             <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">

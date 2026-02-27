@@ -45,34 +45,11 @@ const insightsController = {
         });
       }
 
-      // Check if already upvoted
-      const existing = await prisma.insightVote.findFirst({
-        where: { insightId, userId: req.user.id },
+      // Simple upvote increment (no toggle tracking without a vote model)
+      await prisma.algoInsight.update({
+        where: { id: insightId },
+        data: { upvotes: { increment: 1 } },
       });
-
-      if (existing) {
-        // Toggle: remove upvote
-        await prisma.$transaction([
-          prisma.insightVote.delete({ where: { id: existing.id } }),
-          prisma.algoInsight.update({
-            where: { id: insightId },
-            data: { upvotes: { decrement: 1 } },
-          }),
-        ]);
-
-        return res.json({ success: true, data: { upvoted: false } });
-      }
-
-      // Add upvote
-      await prisma.$transaction([
-        prisma.insightVote.create({
-          data: { insightId, userId: req.user.id },
-        }),
-        prisma.algoInsight.update({
-          where: { id: insightId },
-          data: { upvotes: { increment: 1 } },
-        }),
-      ]);
 
       res.json({ success: true, data: { upvoted: true } });
     } catch (error) {
@@ -128,8 +105,8 @@ const insightsController = {
       // User stats
       const userStats = await prisma.earning.aggregate({
         where: { userId: req.user.id, date: { gte: thirtyDaysAgo } },
-        _sum: { grossAmount: true },
-        _avg: { grossAmount: true },
+        _sum: { netAmount: true },
+        _avg: { netAmount: true },
         _count: true,
       });
 
@@ -145,7 +122,7 @@ const insightsController = {
           user: { city },
           date: { gte: thirtyDaysAgo },
         },
-        _avg: { grossAmount: true },
+        _avg: { netAmount: true },
       });
 
       // Count active users in city
@@ -157,8 +134,8 @@ const insightsController = {
         },
       });
 
-      const userAvg = Number(userStats._avg.grossAmount || 0);
-      const cityAvg = Number(cityStats._avg.grossAmount || 0);
+      const userAvg = Number(userStats._avg.netAmount || 0);
+      const cityAvg = Number(cityStats._avg.netAmount || 0);
       const comparison = cityAvg > 0
         ? Math.round(((userAvg - cityAvg) / cityAvg) * 100)
         : 0;
@@ -169,7 +146,7 @@ const insightsController = {
           period: '30d',
           city,
           user: {
-            totalEarnings: Number(userStats._sum.grossAmount || 0),
+            totalEarnings: Number(userStats._sum.netAmount || 0),
             avgPerEntry: userAvg,
             totalEntries: userStats._count,
             workDays: userWorkDays.length,

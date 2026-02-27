@@ -4,7 +4,7 @@
 // Recalculated nightly via cron
 // ============================================================
 
-const prisma = require('../config/database');
+const { prisma } = require('../config/database');
 
 const MAX_SCORE = 850;
 
@@ -83,14 +83,14 @@ async function getEarningsConsistencyScore(userId) {
 
   const earnings = await prisma.earning.findMany({
     where: { userId, date: { gte: thirtyDaysAgo } },
-    select: { amount: true },
+    select: { netAmount: true },
   });
 
   if (earnings.length < 5) {
     return { score: 0.2, details: { daysWithEarnings: earnings.length, cv: null } };
   }
 
-  const amounts = earnings.map((e) => Number(e.amount));
+  const amounts = earnings.map((e) => Number(e.netAmount));
   const mean = amounts.reduce((a, b) => a + b, 0) / amounts.length;
   const variance = amounts.reduce((sum, val) => sum + (val - mean) ** 2, 0) / amounts.length;
   const stdDev = Math.sqrt(variance);
@@ -129,7 +129,7 @@ async function getPlatformTenureScore(userId) {
 async function getRepaymentScore(userId) {
   const loans = await prisma.loan.findMany({
     where: { userId },
-    include: { repayments: true },
+    include: { repaymentHistory: true },
   });
 
   if (loans.length === 0) {
@@ -160,21 +160,18 @@ async function getRepaymentScore(userId) {
 // ---- Sub-score: Platform Ratings ----
 async function getPlatformRatingsScore(userId) {
   const accounts = await prisma.platformAccount.findMany({
-    where: { userId, connected: true },
-    select: { platform: true, rating: true },
+    where: { userId, isActive: true },
+    select: { platform: true },
   });
 
-  const rated = accounts.filter((a) => a.rating != null);
-  if (rated.length === 0) {
+  if (accounts.length === 0) {
     return { score: 0.5, details: { platforms: 0, avgRating: null } };
   }
 
-  const avgRating = rated.reduce((sum, a) => sum + a.rating, 0) / rated.length;
+  // Without ratings on the model, use a neutral score based on platform count
+  const score = Math.min(1.0, 0.3 + (accounts.length * 0.15));
 
-  // Rating scale: 1–5. Score = rating / 5
-  const score = Math.min(1.0, Math.max(0.1, avgRating / 5));
-
-  return { score, details: { platforms: rated.length, avgRating: avgRating.toFixed(2) } };
+  return { score, details: { platforms: accounts.length, avgRating: null } };
 }
 
 // ---- Sub-score: App Engagement (active days in last 30) ----
@@ -208,8 +205,6 @@ async function updateGigScore(userId) {
     where: { id: userId },
     data: {
       gigScore: score,
-      gigScoreBreakdown: breakdown,
-      gigScoreUpdatedAt: new Date(),
     },
   });
 

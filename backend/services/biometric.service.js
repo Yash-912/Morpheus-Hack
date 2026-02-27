@@ -9,7 +9,7 @@ const {
   CreateCollectionCommand,
 } = require('@aws-sdk/client-rekognition');
 const { rekognitionClient } = require('../config/aws');
-const prisma = require('../config/database');
+const { prisma } = require('../config/database');
 const logger = require('../utils/logger.utils');
 
 const COLLECTION_ID = process.env.REKOGNITION_COLLECTION_ID || 'gigpay-faces-dev';
@@ -46,10 +46,11 @@ const BiometricService = {
 
       const face = result.FaceRecords[0].Face;
 
-      // Store FaceId on user
+      // Store the face embedding reference on user
+      // Note: faceEmbedding is Bytes in the schema; we store the FaceId as a reference string
       await prisma.user.update({
         where: { id: userId },
-        data: { faceEmbeddingId: face.FaceId },
+        data: { faceEmbedding: Buffer.from(face.FaceId) },
       });
 
       logger.info('Face enrolled', { userId, faceId: face.FaceId });

@@ -43,46 +43,44 @@ payoutQueue.process(async (job) => {
 
       const bankAccount = user.bankAccounts[0];
 
-      if (bankAccount && bankAccount.razorpayFundAccountId) {
-        activeFundAccountId = bankAccount.razorpayFundAccountId;
+      // Retrieve the Razorpay Fund Account ID from the user's previous payouts
+      const previousPayout = await prisma.payout.findFirst({
+        where: { userId, razorpayFundAccountId: { not: null } },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (previousPayout && previousPayout.razorpayFundAccountId) {
+        activeFundAccountId = previousPayout.razorpayFundAccountId;
       } else if (bankAccount) {
         // Create Razorpay contact first
-        let contactId = user.razorpayContactId;
+        let contactId = null;
         if (!contactId) {
           contactId = await RazorpayService.createContact({
             name: user.name,
             phone: user.phone,
             email: user.email,
           });
-          await prisma.user.update({
-            where: { id: userId },
-            data: { razorpayContactId: contactId },
-          });
         }
 
         // Create fund account
         activeFundAccountId = await RazorpayService.createFundAccount(contactId, {
           accountNumber: bankAccount.accountNumber,
-          ifscCode: bankAccount.ifscCode,
-          holderName: bankAccount.holderName,
+          ifscCode: bankAccount.ifsc,
+          holderName: user.name || 'Account Holder',
         });
 
         // Persist for future payouts
-        await prisma.bankAccount.update({
-          where: { id: bankAccount.id },
+        await prisma.payout.update({
+          where: { id: payoutId },
           data: { razorpayFundAccountId: activeFundAccountId },
         });
       } else if (upiId) {
         // UPI-based payout — create contact + VPA fund account
-        let contactId = user.razorpayContactId;
+        let contactId = null;
         if (!contactId) {
           contactId = await RazorpayService.createContact({
             name: user.name,
             phone: user.phone,
-          });
-          await prisma.user.update({
-            where: { id: userId },
-            data: { razorpayContactId: contactId },
           });
         }
         // For UPI fund accounts, Razorpay SDK may differ
@@ -108,8 +106,7 @@ payoutQueue.process(async (job) => {
       where: { id: payoutId },
       data: {
         status: 'processing',
-        externalId: razorpayPayoutId,
-        processedAt: new Date(),
+        razorpayPayoutId: razorpayPayoutId,
       },
     });
 
@@ -160,9 +157,9 @@ payoutQueue.process(async (job) => {
           });
 
           // Refund amount back to wallet
-          await tx.wallet.update({
-            where: { userId },
-            data: { balance: { increment: BigInt(amount) } },
+          await tx.user.update({
+            where: { id: userId },
+            data: { walletBalance: { increment: BigInt(amount) } },
           });
         });
 

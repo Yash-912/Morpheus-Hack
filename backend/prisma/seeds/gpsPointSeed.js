@@ -7,10 +7,12 @@
  * Points are concentrated around 10 real Mumbai food ordering hotspots.
  */
 
+require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+const { prisma } = require('../../config/database');
 const { PrismaClient } = require('@prisma/client');
 const seedrandom = require('seedrandom');
 
-const prisma = new PrismaClient();
+
 const rng = seedrandom('gigpay2023');
 
 // ── Hub definitions ─────────────────────────────────────────────

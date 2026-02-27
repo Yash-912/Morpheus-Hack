@@ -21,7 +21,7 @@ const taxController = {
       // Total earnings in FY
       const earningsAgg = await prisma.earning.aggregate({
         where: { userId: req.user.id, date: { gte: startDate, lte: endDate } },
-        _sum: { amount: true },
+        _sum: { netAmount: true },
       });
 
       // Tax-deductible expenses
@@ -34,10 +34,10 @@ const taxController = {
       expenses.forEach((e) => {
         const amt = Number(e.amount);
         totalExpenses += amt;
-        if (e.taxDeductible) deductibleExpenses += amt;
+        if (e.isTaxDeductible) deductibleExpenses += amt;
       });
 
-      const totalEarnings = Number(earningsAgg._sum.amount || 0);
+      const totalEarnings = Number(earningsAgg._sum.netAmount || 0);
       const taxableIncome = Math.max(0, totalEarnings - deductibleExpenses);
 
       // Compute estimated tax
@@ -73,7 +73,7 @@ const taxController = {
         where: {
           userId: req.user.id,
           date: { gte: startDate, lte: endDate },
-          taxDeductible: true,
+          isTaxDeductible: true,
         },
         orderBy: { date: 'asc' },
       });
@@ -94,7 +94,7 @@ const taxController = {
         byCategory[e.category].items.push({
           id: e.id,
           amount: amt,
-          description: e.description,
+          description: e.notes,
           date: e.date,
           merchant: e.merchant,
         });
@@ -124,19 +124,19 @@ const taxController = {
 
       const earningsAgg = await prisma.earning.aggregate({
         where: { userId: req.user.id, date: { gte: startDate, lte: endDate } },
-        _sum: { amount: true },
+        _sum: { netAmount: true },
       });
 
       const expenseAgg = await prisma.expense.aggregate({
         where: {
           userId: req.user.id,
           date: { gte: startDate, lte: endDate },
-          taxDeductible: true,
+          isTaxDeductible: true,
         },
         _sum: { amount: true },
       });
 
-      const totalEarnings = Number(earningsAgg._sum.amount || 0);
+      const totalEarnings = Number(earningsAgg._sum.netAmount || 0);
       const autoDeductions = Number(expenseAgg._sum.amount || 0);
       const extraTotal = extraDeductions.reduce((s, d) => s + (d.amount || 0), 0);
       const totalDeductions = autoDeductions + extraTotal;
@@ -175,7 +175,7 @@ const taxController = {
 
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
 
-      if (!user.panNumber) {
+      if (!user.pan) {
         return res.status(400).json({
           success: false,
           error: { code: 'PAN_REQUIRED', message: 'PAN number is required for filing. Please complete KYC.' },
@@ -184,18 +184,24 @@ const taxController = {
 
       const result = await ClearTaxService.initiateFilingSession({
         userId: req.user.id,
-        panNumber: user.panNumber,
+        panNumber: user.pan,
         fy,
       });
 
       // Record filing attempt
-      await prisma.taxFiling.create({
-        data: {
+      await prisma.taxRecord.upsert({
+        where: {
+          userId_financialYear: { userId: req.user.id, financialYear: fy },
+        },
+        update: {
+          filingStatus: 'submitted',
+          cleartaxReturnId: result.sessionId || null,
+        },
+        create: {
           userId: req.user.id,
           financialYear: fy,
-          status: 'initiated',
-          provider: 'cleartax',
-          externalId: result.sessionId || null,
+          filingStatus: 'submitted',
+          cleartaxReturnId: result.sessionId || null,
         },
       });
 
@@ -221,7 +227,7 @@ const taxController = {
     try {
       const { fy } = req.params;
 
-      const filing = await prisma.taxFiling.findFirst({
+      const filing = await prisma.taxRecord.findFirst({
         where: { userId: req.user.id, financialYear: fy },
         orderBy: { createdAt: 'desc' },
       });
@@ -233,15 +239,14 @@ const taxController = {
         });
       }
 
-      // If external session exists, check latest status
-      let latestStatus = filing.status;
-      if (filing.externalId && filing.status !== 'completed' && filing.status !== 'failed') {
+      let latestStatus = filing.filingStatus;
+      if (filing.cleartaxReturnId && filing.filingStatus !== 'verified' && filing.filingStatus !== 'draft') {
         try {
-          const remote = await ClearTaxService.getFilingStatus(filing.externalId);
-          if (remote && remote.status !== filing.status) {
-            await prisma.taxFiling.update({
+          const remote = await ClearTaxService.getFilingStatus(filing.cleartaxReturnId);
+          if (remote && remote.status !== filing.filingStatus) {
+            await prisma.taxRecord.update({
               where: { id: filing.id },
-              data: { status: remote.status },
+              data: { filingStatus: remote.status },
             });
             latestStatus = remote.status;
           }

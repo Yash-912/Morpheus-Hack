@@ -1,28 +1,27 @@
 // ============================================================
-// Session Service — Redis conversation state management
+// Session Service — In-memory conversation state management
+// Falls back to in-memory Map when Redis not available
 // Key: wa_session:{phone}
 // Value: JSON { intent, step, data, lang, expiresAt }
 // TTL: SESSION_TTL_SECONDS (default 600 = 10 min)
 // ============================================================
 
-const Redis = require('ioredis');
 const logger = require('../utils/logger');
 
 const TTL = parseInt(process.env.SESSION_TTL_SECONDS || '600', 10);
 
-let redis = null;
+// In-memory session store (works without Redis)
+const memoryStore = new Map();
 
-function getRedis() {
-    if (!redis) {
-        redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-            maxRetriesPerRequest: 3,
-            lazyConnect: true,
-        });
-        redis.on('error', (err) => logger.error('Session Redis error:', err.message));
-        redis.on('connect', () => logger.info('Session Redis connected'));
+// Clean up expired sessions every 60 seconds
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of memoryStore) {
+        if (entry.expiresAt && entry.expiresAt < now) {
+            memoryStore.delete(key);
+        }
     }
-    return redis;
-}
+}, 60000);
 
 function sessionKey(phone) {
     return `wa_session:${phone}`;
@@ -36,8 +35,15 @@ const SessionService = {
      */
     async get(phone) {
         try {
-            const raw = await getRedis().get(sessionKey(phone));
-            return raw ? JSON.parse(raw) : null;
+            const key = sessionKey(phone);
+            const entry = memoryStore.get(key);
+            if (!entry) return null;
+            // Check TTL
+            if (entry.expiresAt && entry.expiresAt < Date.now()) {
+                memoryStore.delete(key);
+                return null;
+            }
+            return entry.data;
         } catch (err) {
             logger.error('Session get error:', err.message);
             return null;
@@ -56,7 +62,10 @@ const SessionService = {
                 ...sessionData,
                 updatedAt: new Date().toISOString(),
             };
-            await getRedis().set(sessionKey(phone), JSON.stringify(payload), 'EX', ttl);
+            memoryStore.set(sessionKey(phone), {
+                data: payload,
+                expiresAt: Date.now() + ttl * 1000,
+            });
         } catch (err) {
             logger.error('Session set error:', err.message);
         }
@@ -75,7 +84,7 @@ const SessionService = {
      */
     async clear(phone) {
         try {
-            await getRedis().del(sessionKey(phone));
+            memoryStore.delete(sessionKey(phone));
         } catch (err) {
             logger.error('Session clear error:', err.message);
         }
