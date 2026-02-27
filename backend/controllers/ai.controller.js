@@ -218,6 +218,55 @@ const aiController = {
             next(error);
         }
     },
+
+    /**
+     * POST /api/ai/explain-insights
+     * Summarizes JSON trend data into a vernacular voice/text explanation
+     */
+    async generateInsightsSummary(req, res, next) {
+        try {
+            const { insightData, languagePref } = req.body;
+            if (!insightData) {
+                return res.status(400).json({
+                    success: false,
+                    error: { code: 'NO_DATA', message: 'Insight data is required' },
+                });
+            }
+
+            const langDisplay = languagePref === 'hi' ? 'Hindi' : languagePref === 'mr' ? 'Marathi' : 'English';
+
+            const systemPrompt = `You are a helpful, encouraging financial assistant for an Indian gig worker.
+Your task is to review their recent earnings data and provide a short, motivating summary explaining how they are doing.
+
+RULES:
+- Answer ONLY in ${langDisplay}. Do not mix languages unless using common English loan words (like 'Target' or 'Order').
+- Keep it extremely short: strictly 2 or 3 sentences max.
+- Be highly encouraging and positive.
+- Use exact ₹ rupee amounts from the data if they stand out.
+- Do not use markdown (no *asterisks* or bold). This text will be spoken aloud.`;
+
+            const userMessage = `Here is my recent data: ${JSON.stringify(insightData)}`;
+
+            const replyText = await callLLM(systemPrompt, userMessage);
+
+            // Generate TTS so the user can immediately play the explanation
+            const langCode = detectLanguage(replyText);
+            const ttsResult = await SarvamService.textToSpeech(replyText, langCode);
+
+            res.json({
+                success: true,
+                data: {
+                    summary: replyText,
+                    audioBase64: ttsResult.audioBase64 || '',
+                    languageCode: langCode
+                }
+            });
+
+        } catch (error) {
+            logger.error('Insights summary error', { error: error.message, stack: error.stack });
+            next(error);
+        }
+    }
 };
 
 module.exports = aiController;

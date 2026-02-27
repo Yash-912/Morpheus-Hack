@@ -93,7 +93,14 @@ async function startServer() {
     startZoneScheduler();
     startLoanScheduler();
     startNotificationScheduler();
-    logger.info('Cron schedulers started');
+
+    // Wow Feature #1: AI Copilot Proactive Alerts (every 30 mins)
+    const cron = require('node-cron');
+    const CopilotService = require('./services/copilot.service');
+    cron.schedule('*/30 * * * *', () => {
+      CopilotService.checkHotZonesAndAlert();
+    });
+    logger.info('Cron schedulers (including Copilot) started');
 
     // 6. Listen
     server.listen(PORT, () => {
