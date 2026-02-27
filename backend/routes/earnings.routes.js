@@ -67,4 +67,14 @@ router.post(
 // GET /api/earnings/forecast
 router.get('/forecast', earningsController.getForecast);
 
+// POST /api/earnings/sync-sms — LAYER 1: detect earnings from SMS messages
+router.post(
+  '/sync-sms',
+  [
+    body('messages').isArray({ min: 1 }).withMessage('messages array is required'),
+  ],
+  validate,
+  earningsController.syncEarningsFromSms
+);
+
 module.exports = router;

@@ -9,6 +9,61 @@ const NotificationService = require('../services/notification.service');
 
 const webhooksController = {
   /**
+   * Stripe Webhook
+   * Validates raw body signature and processes payment intents.
+   */
+  async stripe(req, res, next) {
+    const StripeService = require('../services/stripe.service');
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    const signature = req.headers['stripe-signature'];
+
+    if (!signature || !webhookSecret) {
+      return res.status(401).json({ error: 'Missing Stripe webhook secret or signature' });
+    }
+
+    let event;
+    try {
+      event = StripeService.constructEvent(req.body, signature, webhookSecret);
+    } catch (err) {
+      logger.error('Stripe webhook signature verification failed:', err.message);
+      return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    logger.info('Stripe webhook received', { type: event.type });
+
+    if (event.type === 'payment_intent.succeeded') {
+      const paymentIntent = event.data.object;
+      const { jobId, payerId } = paymentIntent.metadata || {};
+      const amount = paymentIntent.amount; // in paise
+
+      if (payerId) {
+        try {
+          // Increment wallet balances on User model
+          await prisma.user.update({
+            where: { id: payerId },
+            data: {
+              walletBalance: { increment: amount },
+              walletLifetimeEarned: { increment: amount }
+            }
+          });
+          logger.info('Wallet credited via Stripe webhook', { userId: payerId, amount });
+
+          await NotificationService.send(payerId, {
+            type: 'payment_received',
+            title: 'Payment Received',
+            body: `₹${(amount / 100).toFixed(2)} has been added to your wallet.`,
+            channel: ['push', 'in_app'],
+          });
+        } catch (dbErr) {
+          logger.error('Failed to update wallet in Stripe webhook:', dbErr);
+        }
+      }
+    }
+
+    res.json({ received: true });
+  },
+
+  /**
    * POST /api/webhooks/razorpay
    * Razorpay payout webhook — verifies HMAC, handles events.
    */

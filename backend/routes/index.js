@@ -30,5 +30,6 @@ router.use('/gigscore', require('./gigscore.routes'));
 router.use('/microsavings', require('./microsavings.routes'));
 router.use('/credit', require('./credit.routes'));
 router.use('/tds', require('./tds.routes'));
+router.use('/ai', require('./ai.routes'));
 
 module.exports = router;

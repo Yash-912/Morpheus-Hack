@@ -41,6 +41,9 @@ app.use(
   })
 );
 
+// ---- Stripe Webhook (needs raw body) ----
+app.post('/api/webhooks/stripe', express.raw({ type: 'application/json' }), require('./controllers/webhooks.controller').stripe);
+
 // ---- Body Parsing ----
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -52,6 +55,7 @@ app.get('/health', (_req, res) => {
 
 // ---- API Routes ----
 app.use('/api', require('./routes'));
+app.use('/api/payments', require('./routes/payments.routes'));
 
 // ---- 404 Handler ----
 app.use((_req, res) => {

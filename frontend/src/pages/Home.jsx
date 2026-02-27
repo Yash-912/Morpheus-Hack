@@ -12,6 +12,7 @@ import SMSPermission from '../components/expenses/SMSPermission';
 import { ArrowRight, Flame, Gauge, PiggyBank, Zap, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { useLanguage } from '../context/LanguageContext';
 
 const Home = () => {
     const setActiveTab = useUIStore(state => state.setActiveTab);
@@ -23,6 +24,7 @@ const Home = () => {
 
     // Fetch live community jobs around Bengaluru center for demo
     const { nearbyJobs, isLoadingNearby } = useCommunity(12.9716, 77.5946, 50);
+    const { t } = useLanguage();
 
     useEffect(() => {
         setActiveTab('home');
@@ -66,7 +68,7 @@ const Home = () => {
 
             {/* Quick Actions */}
             <section>
-                <h2 className="text-heading-md mb-3">Quick Actions</h2>
+                <h2 className="text-heading-md mb-3">{t('quickActions')}</h2>
                 <ActionGrid />
             </section>
 
@@ -120,13 +122,13 @@ const Home = () => {
             {/* Recommended for You */}
             <section>
                 <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-heading-md">Live Opportunities</h2>
-                    <Button variant="ghost" size="ghost" className="pe-0" onClick={() => navigate('/community')}>See All <ArrowRight size={16} className="ml-1" /></Button>
+                    <h2 className="text-heading-md">{t('liveOpportunities')}</h2>
+                    <Button variant="ghost" size="ghost" className="pe-0" onClick={() => navigate('/community')}>{t('seeAll')} <ArrowRight size={16} className="ml-1" /></Button>
                 </div>
 
                 <div className="flex flex-col gap-3">
                     {isLoadingNearby ? (
-                        <div className="p-4 text-center text-gigpay-text-muted">Loading nearby gigs...</div>
+                        <div className="p-4 text-center text-gigpay-text-muted">{t('loadingGigs')}</div>
                     ) : nearbyJobs && nearbyJobs.length > 0 ? (
                         nearbyJobs.slice(0, 3).map((job) => (
                             <ActionCard key={job.id} className="flex items-start justify-between cursor-pointer" onClick={() => navigate(`/community/${job.id}`)}>
@@ -148,7 +150,7 @@ const Home = () => {
                         ))
                     ) : (
                         <Card className="p-4 text-center border-dashed bg-transparent border-gigpay-border/60">
-                            <p className="text-body-md text-gigpay-text-secondary">No local gigs found right now.</p>
+                            <p className="text-body-md text-gigpay-text-secondary">{t('noGigsFound')}</p>
                         </Card>
                     )}
                 </div>

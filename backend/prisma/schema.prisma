@@ -109,6 +109,7 @@ model Earning {
   avgPerTrip         BigInt?         @map("avg_per_trip")
   zone               String?
   source             EarningSource   @default(manual)
+  status             String          @default("pending_settlement")
   rawScreenshotUrl   String?         @map("raw_screenshot_url")
   verified           Boolean         @default(false)
   createdAt          DateTime        @default(now()) @map("created_at")
@@ -125,10 +126,12 @@ model Payout {
   id                    String          @id @default(uuid())
   userId                String          @map("user_id")
   amount                BigInt
-  fee                   BigInt          @default(0)
-  netAmount             BigInt          @map("net_amount")
-  type                  PayoutType
-  status                PayoutStatus    @default(pending)
+  fee                   Int
+  netAmount             Int
+  loanDeduction         Int             @default(0)
+  stripeTransferId      String?
+  type                  String          @default("instant")
+  status                String          @default("processing")
   upiId                 String?         @map("upi_id")
   razorpayPayoutId      String?         @map("razorpay_payout_id")
   razorpayFundAccountId String?         @map("razorpay_fund_account_id")

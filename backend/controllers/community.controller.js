@@ -20,17 +20,30 @@ const communityController = {
       const radius = parseInt(req.query.radius, 10) || 10; // default 10 km
       const type = req.query.type || null;
 
-      // Raw PostGIS query for nearby open jobs
-      const radiusMeters = radius * 1000;
+      // Bounding box query (no PostGIS needed)
+      // 1 degree latitude ≈ 111 km
+      const degPerKm = 1 / 111.0;
+      const latDelta = radius * degPerKm;
+      const lngDelta = radius * degPerKm / Math.cos(lat * Math.PI / 180);
+      const minLat = lat - latDelta;
+      const maxLat = lat + latDelta;
+      const minLng = lng - lngDelta;
+      const maxLng = lng + lngDelta;
+
       const jobs = await prisma.$queryRaw`
         SELECT j.*,
-          ST_Distance(ST_SetSRID(ST_MakePoint(j.geo_lng, j.geo_lat), 4326)::geography, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography) AS distance_m,
+          (6371000 * acos(
+            cos(radians(${lat})) * cos(radians(j.geo_lat)) *
+            cos(radians(j.geo_lng) - radians(${lng})) +
+            sin(radians(${lat})) * sin(radians(j.geo_lat))
+          )) AS distance_m,
           u.name AS poster_name
         FROM "community_jobs" j
         JOIN "users" u ON u.id = j."posted_by"
         WHERE j.status = 'open'
-          AND j.geo_lng IS NOT NULL AND j.geo_lat IS NOT NULL
-          AND ST_DWithin(ST_SetSRID(ST_MakePoint(j.geo_lng, j.geo_lat), 4326)::geography, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radiusMeters})
+          AND j.geo_lat IS NOT NULL AND j.geo_lng IS NOT NULL
+          AND j.geo_lat BETWEEN ${minLat} AND ${maxLat}
+          AND j.geo_lng BETWEEN ${minLng} AND ${maxLng}
           AND (${type}::text IS NULL OR j.type::text = ${type}::text)
         ORDER BY distance_m ASC
         LIMIT 50

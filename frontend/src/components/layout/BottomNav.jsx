@@ -3,17 +3,19 @@ import { useUIStore } from '../../store/ui.store';
 import { motion } from 'framer-motion';
 import { cn } from '../ui/Button';
 import { useNavigate } from 'react-router-dom';
-
-const navItems = [
-    { id: 'home', icon: Home, label: 'Home', path: '/' },
-    { id: 'wallet', icon: Wallet, label: 'Wallet', path: '/wallet' },
-    { id: 'map', icon: Users, label: 'Zones', path: '/zones' },
-    { id: 'more', icon: LayoutGrid, label: 'More', path: '/insights' }
-];
+import { useLanguage } from '../../context/LanguageContext';
 
 const BottomNav = () => {
     const { activeTab, setActiveTab } = useUIStore();
     const navigate = useNavigate();
+    const { t } = useLanguage();
+
+    const navItems = [
+        { id: 'home', icon: Home, label: t('home'), path: '/' },
+        { id: 'wallet', icon: Wallet, label: t('wallet'), path: '/wallet' },
+        { id: 'map', icon: Users, label: t('zones'), path: '/zones' },
+        { id: 'more', icon: LayoutGrid, label: t('more'), path: '/insights' }
+    ];
 
     const handleNavClick = (item) => {
         setActiveTab(item.id);

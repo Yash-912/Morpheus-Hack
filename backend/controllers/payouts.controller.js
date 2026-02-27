@@ -104,71 +104,40 @@ const payoutsController = {
 
   /**
    * POST /api/payouts/initiate
-   * Full payout flow: balance check → daily limit → fraud → loan deduct → savings → enqueue.
+   * LAYER 2 — WORKER CASHOUT REQUEST (Stripe involved here)
    */
   async initiate(req, res, next) {
     try {
-      const { amount, type = 'standard' } = req.body;
+      const requestedAmount = parseInt(req.body.amount, 10);
+      const type = req.body.type || 'standard';
       const userId = req.user.id;
 
-      // 1. Check wallet balance
+      // Step 1: Validate worker has sufficient wallet balance
       const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { walletBalance: true },
       });
 
-      if (Number(user.walletBalance) < amount) {
+      if (Number(user.walletBalance) < requestedAmount) {
         return res.status(400).json({
           success: false,
           error: {
-            code: 'INSUFFICIENT_BALANCE',
+            code: 'PAY_001',
             message: `Insufficient balance. Available: ₹${paiseToRupees(Number(user.walletBalance))}`,
           },
         });
       }
 
-      // 2. Check daily limit
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const todayPayouts = await prisma.payout.aggregate({
-        where: {
-          userId,
-          createdAt: { gte: today },
-          status: { in: ['pending', 'processing', 'completed'] },
-        },
-        _sum: { amount: true },
-      });
+      // Step 2: Calculate fee
+      const fee = Math.max(500, Math.round(requestedAmount * 0.012));
+      const netAmount = requestedAmount - fee;
 
-      const todayTotal = Number(todayPayouts._sum.amount || 0);
-      if (todayTotal + amount > DAILY_CASHOUT_LIMIT) {
-        return res.status(400).json({
-          success: false,
-          error: {
-            code: 'DAILY_LIMIT_EXCEEDED',
-            message: `Daily withdrawal limit ₹${paiseToRupees(DAILY_CASHOUT_LIMIT)} exceeded. Remaining: ₹${paiseToRupees(DAILY_CASHOUT_LIMIT - todayTotal)}`,
-          },
-        });
-      }
+      // Step 3: Check Stripe float via getFloatBalance()
+      const StripeService = require('../services/stripe.service');
+      const floatCheck = await StripeService.getFloatBalance();
+      const floatSufficient = floatCheck.sufficient;
 
-      // 3. Fraud check
-      const fraudResult = await FraudService.checkPayoutFraud(userId, amount);
-      if (fraudResult.blocked) {
-        return res.status(403).json({
-          success: false,
-          error: {
-            code: 'PAYOUT_BLOCKED',
-            message: 'Payout blocked for security reasons',
-            reasons: fraudResult.reasons,
-          },
-        });
-      }
-
-      // 4. Calculate fee
-      const feePercent = type === 'instant' ? INSTANT_PAYOUT_FEE_PERCENT : PAYOUT_FEE_PERCENT;
-      const fee = Math.round(amount * feePercent) + PAYOUT_FEE_FLAT;
-      const netAmount = amount - fee;
-
-      // 5. Loan auto-deduct
+      // Step 4: Deduct active loan if exists
       let loanDeduction = 0;
       const activeLoan = await prisma.loan.findFirst({
         where: { userId, status: 'active' },
@@ -178,54 +147,84 @@ const payoutsController = {
         loanDeduction = Math.round(netAmount * ((activeLoan.autoDeductPercent || 10) / 100));
         const remaining = Number(activeLoan.totalRepayable) - Number(activeLoan.amountRepaid);
         loanDeduction = Math.min(loanDeduction, remaining);
-      }
 
-      // 6. Create payout record + deduct wallet atomically
-      const payout = await prisma.$transaction(async (tx) => {
-        await tx.user.update({
-          where: { id: userId },
-          data: { walletBalance: { decrement: BigInt(amount) } },
-        });
-
-        const p = await tx.payout.create({
+        const newRepaidAmount = Number(activeLoan.amountRepaid) + loanDeduction;
+        await prisma.loan.update({
+          where: { id: activeLoan.id },
           data: {
-            userId,
-            amount: BigInt(amount),
-            fee: BigInt(fee),
-            netAmount: BigInt(netAmount - loanDeduction),
-            type,
-            status: 'pending',
-          },
+            amountRepaid: BigInt(Math.round(newRepaidAmount)),
+            status: newRepaidAmount >= Number(activeLoan.totalRepayable) ? 'repaid' : 'active'
+          }
         });
-
-        return p;
-      });
-
-      // 7. Process loan repayment if applicable
-      if (loanDeduction > 0 && activeLoan) {
-        await LoanService.processRepayment(activeLoan.id, loanDeduction, payout.id);
       }
 
-      // 8. Savings round-up
-      await SavingsService.processRoundUp(userId, netAmount - loanDeduction).catch(() => { });
+      // Step 5: Calculate finalAmount
+      const finalAmount = netAmount - loanDeduction;
 
-      // 9. Send confirmation notification
-      await NotificationService.sendPayoutConfirmation(userId, {
-        amount,
-        fee,
-        netAmount: netAmount - loanDeduction,
-        loanDeduction,
-        payoutId: payout.id,
-      }).catch(() => { });
+      // Step 6: Create Stripe transfer (only if float sufficient)
+      let transferId = null;
+      if (floatSufficient) {
+        const transferResult = await StripeService.createEarnedWageTransfer(finalAmount, {
+          worker_id: userId,
+          type: 'earned_wage_advance',
+          platform: 'gigpay',
+          loan_deduction: loanDeduction
+        });
+        transferId = transferResult.transferId;
+      }
 
-      logger.info('Payout initiated', {
-        userId,
-        payoutId: payout.id,
-        amount: paiseToRupees(amount),
-        fee: paiseToRupees(fee),
+      // Step 7: Deduct worker wallet in DB
+      await prisma.user.update({
+        where: { id: userId },
+        data: { walletBalance: { decrement: BigInt(requestedAmount) } },
       });
 
-      res.status(201).json({
+      // Step 8: Create payout record
+      const payout = await prisma.payout.create({
+        data: {
+          userId,
+          amount: BigInt(requestedAmount),
+          fee,
+          netAmount: finalAmount,
+          loanDeduction,
+          stripeTransferId: transferId,
+          type,
+          status: 'pending',
+        },
+      });
+
+      // Step 9: Simulate UPI transfer completion after 3 seconds
+      if (floatSufficient) {
+        setTimeout(async () => {
+          try {
+            await prisma.payout.update({
+              where: { id: payout.id },
+              data: {
+                status: "completed",
+                completedAt: new Date()
+              }
+            });
+            // call sendWhatsAppNotification
+            await NotificationService.send(userId, {
+              type: 'payout_success',
+              title: 'Payout Successful',
+              body: `₹${(finalAmount / 100).toFixed(2)} has been sent to your UPI.`,
+              channel: ['whatsapp', 'push']
+            });
+
+            // emit socket event "payout:completed" to user's room
+            const io = global.__io;
+            if (io) {
+              io.to(`user:${userId}`).emit('payout:completed', { payoutId: payout.id, finalAmount });
+            }
+          } catch (e) {
+            logger.error('Fake UPI completion error', e);
+          }
+        }, 3000);
+      }
+
+      // Step 10: Return response immediately (don't wait for setTimeout)
+      res.json({
         success: true,
         data: {
           payoutId: payout.id,

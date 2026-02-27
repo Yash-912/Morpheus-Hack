@@ -7,6 +7,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { connectSocket, disconnectSocket } from '../../services/socket.service';
 import { GPSProvider } from '../../context/GPSContext';
 import GPSPrompt from '../GPSPrompt';
+import VoiceAssistant from '../voice/VoiceAssistant';
 
 const AppLayout = () => {
     const { user } = useAuth();
@@ -30,6 +31,9 @@ const AppLayout = () => {
                 <main className="flex-grow pt-[72px] pb-24 px-4 overflow-x-hidden">
                     <Outlet />
                 </main>
+
+                {/* Voice Assistant FAB — above bottom nav */}
+                <VoiceAssistant />
 
                 <BottomNav />
 
