@@ -14,8 +14,9 @@ const communityController = {
    */
   async nearbyJobs(req, res, next) {
     try {
-      const lat = parseFloat(req.query.lat);
-      const lng = parseFloat(req.query.lng);
+      // Default to Bangalore if coords missing/invalid
+      const lat = parseFloat(req.query.lat) || 12.9716;
+      const lng = parseFloat(req.query.lng) || 77.5946;
       const radius = parseInt(req.query.radius, 10) || 10; // default 10 km
       const type = req.query.type || null;
 
@@ -23,21 +24,22 @@ const communityController = {
       const radiusMeters = radius * 1000;
       const jobs = await prisma.$queryRaw`
         SELECT j.*,
-          ST_Distance(j.location::geography, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography) AS distance_m,
+          ST_Distance(ST_SetSRID(ST_MakePoint(j.geo_lng, j.geo_lat), 4326)::geography, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography) AS distance_m,
           u.name AS poster_name
-        FROM "CommunityJob" j
-        JOIN "User" u ON u.id = j."posterId"
+        FROM "community_jobs" j
+        JOIN "users" u ON u.id = j."posted_by"
         WHERE j.status = 'open'
-          AND ST_DWithin(j.location::geography, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radiusMeters})
-          ${type ? prisma.$queryRaw`AND j.type = ${type}` : prisma.$queryRaw``}
+          AND j.geo_lng IS NOT NULL AND j.geo_lat IS NOT NULL
+          AND ST_DWithin(ST_SetSRID(ST_MakePoint(j.geo_lng, j.geo_lat), 4326)::geography, ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)::geography, ${radiusMeters})
+          AND (${type}::text IS NULL OR j.type::text = ${type}::text)
         ORDER BY distance_m ASC
         LIMIT 50
       `;
 
       const data = jobs.map((j) => ({
         ...j,
-        amount: Number(j.amount),
-        escrowAmount: Number(j.escrowAmount || 0),
+        amount: Number(j.offered_price),
+        escrowAmount: Number(j.escrow_amount || 0),
         distanceKm: Math.round((Number(j.distance_m) / 1000) * 10) / 10,
       }));
 
@@ -73,14 +75,17 @@ const communityController = {
 
         return tx.communityJob.create({
           data: {
-            posterId: req.user.id,
+            postedById: req.user.id,
             title,
             description,
             type,
-            amount: BigInt(amount),
+            offeredPrice: BigInt(amount),
             escrowAmount: BigInt(amount),
-            location: prisma.$queryRaw`ST_SetSRID(ST_MakePoint(${lng}, ${lat}), 4326)`,
-            address: address || '',
+            geoLat: lat,
+            geoLng: lng,
+            pickupLat: lat,
+            pickupLng: lng,
+            pickupAddress: address || '',
             status: 'open',
           },
         });
@@ -90,7 +95,7 @@ const communityController = {
 
       res.status(201).json({
         success: true,
-        data: { ...job, amount: Number(job.amount), escrowAmount: Number(job.escrowAmount) },
+        data: { ...job, amount: Number(job.offeredPrice), escrowAmount: Number(job.escrowAmount) },
       });
     } catch (error) {
       next(error);
@@ -105,8 +110,8 @@ const communityController = {
       const job = await prisma.communityJob.findUnique({
         where: { id: req.params.id },
         include: {
-          poster: { select: { id: true, name: true } },
-          worker: { select: { id: true, name: true } },
+          postedBy: { select: { id: true, name: true } },
+          assignedTo: { select: { id: true, name: true } },
         },
       });
 
@@ -119,7 +124,7 @@ const communityController = {
 
       res.json({
         success: true,
-        data: { ...job, amount: Number(job.amount), escrowAmount: Number(job.escrowAmount) },
+        data: { ...job, amount: Number(job.offeredPrice), escrowAmount: Number(job.escrowAmount) },
       });
     } catch (error) {
       next(error);
@@ -148,7 +153,7 @@ const communityController = {
         });
       }
 
-      if (job.posterId === req.user.id) {
+      if (job.postedById === req.user.id) {
         return res.status(400).json({
           success: false,
           error: { code: 'SELF_ACCEPT', message: 'Cannot accept your own job' },
@@ -157,14 +162,14 @@ const communityController = {
 
       const updated = await prisma.communityJob.update({
         where: { id: req.params.id },
-        data: { workerId: req.user.id, status: 'assigned', acceptedAt: new Date() },
+        data: { assignedToId: req.user.id, status: 'assigned', acceptedAt: new Date() },
       });
 
       logger.info('Community job accepted', { jobId: job.id, workerId: req.user.id });
 
       res.json({
         success: true,
-        data: { ...updated, amount: Number(updated.amount), escrowAmount: Number(updated.escrowAmount) },
+        data: { ...updated, amount: Number(updated.offeredPrice), escrowAmount: Number(updated.escrowAmount) },
       });
     } catch (error) {
       next(error);
@@ -186,7 +191,7 @@ const communityController = {
         });
       }
 
-      if (job.workerId !== req.user.id) {
+      if (job.assignedToId !== req.user.id) {
         return res.status(403).json({
           success: false,
           error: { code: 'NOT_WORKER', message: 'Only the assigned worker can mark complete' },
@@ -207,7 +212,7 @@ const communityController = {
 
       res.json({
         success: true,
-        data: { ...updated, amount: Number(updated.amount), escrowAmount: Number(updated.escrowAmount) },
+        data: { ...updated, amount: Number(updated.offeredPrice), escrowAmount: Number(updated.escrowAmount) },
       });
     } catch (error) {
       next(error);
@@ -229,7 +234,7 @@ const communityController = {
         });
       }
 
-      if (job.posterId !== req.user.id) {
+      if (job.postedById !== req.user.id) {
         return res.status(403).json({
           success: false,
           error: { code: 'NOT_POSTER', message: 'Only the job poster can confirm completion' },
@@ -249,9 +254,8 @@ const communityController = {
 
       // Atomic: release escrow to worker wallet, update job
       await prisma.$transaction(async (tx) => {
-        // Credit worker wallet
         await tx.wallet.update({
-          where: { userId: job.workerId },
+          where: { userId: job.assignedToId },
           data: { balance: { increment: BigInt(workerPayout) } },
         });
 
@@ -308,8 +312,8 @@ const communityController = {
       }
 
       // Poster rates worker, or worker rates poster
-      const isRaterPoster = job.posterId === req.user.id;
-      const isRaterWorker = job.workerId === req.user.id;
+      const isRaterPoster = job.postedById === req.user.id;
+      const isRaterWorker = job.assignedToId === req.user.id;
 
       if (!isRaterPoster && !isRaterWorker) {
         return res.status(403).json({
@@ -324,7 +328,7 @@ const communityController = {
         data: {
           jobId: job.id,
           raterId: req.user.id,
-          ratedUserId: isRaterPoster ? job.workerId : job.posterId,
+          ratedUserId: isRaterPoster ? job.assignedToId : job.postedById,
           rating,
           review: review || '',
         },
@@ -344,22 +348,22 @@ const communityController = {
     try {
       const [posted, accepted] = await Promise.all([
         prisma.communityJob.findMany({
-          where: { posterId: req.user.id },
+          where: { postedById: req.user.id },
           orderBy: { createdAt: 'desc' },
           take: 50,
-          include: { worker: { select: { id: true, name: true } } },
+          include: { assignedTo: { select: { id: true, name: true } } },
         }),
         prisma.communityJob.findMany({
-          where: { workerId: req.user.id },
+          where: { assignedToId: req.user.id },
           orderBy: { createdAt: 'desc' },
           take: 50,
-          include: { poster: { select: { id: true, name: true } } },
+          include: { postedBy: { select: { id: true, name: true } } },
         }),
       ]);
 
       const convert = (j) => ({
         ...j,
-        amount: Number(j.amount),
+        amount: Number(j.offeredPrice),
         escrowAmount: Number(j.escrowAmount || 0),
       });
 

@@ -78,28 +78,28 @@ const earningsController = {
 
       const agg = await prisma.earning.aggregate({
         where,
-        _sum: { totalAmount: true, incentiveAmount: true },
-        _avg: { totalAmount: true },
+        _sum: { netAmount: true, grossAmount: true },
+        _avg: { netAmount: true },
         _count: true,
-        _max: { totalAmount: true },
-        _min: { totalAmount: true },
+        _max: { netAmount: true },
+        _min: { netAmount: true },
       });
 
       const tripSum = await prisma.earning.aggregate({
         where,
-        _sum: { tripCount: true },
+        _sum: { tripsCount: true },
       });
 
       res.json({
         success: true,
         data: {
           period,
-          totalAmount: Number(agg._sum.totalAmount || 0),
-          incentiveAmount: Number(agg._sum.incentiveAmount || 0),
-          avgDaily: Math.round(Number(agg._avg.totalAmount || 0)),
-          maxDay: Number(agg._max.totalAmount || 0),
-          minDay: Number(agg._min.totalAmount || 0),
-          totalTrips: Number(tripSum._sum.tripCount || 0),
+          totalAmount: Number(agg._sum.netAmount || 0),
+          incentiveAmount: Number(agg._sum.grossAmount || 0) - Number(agg._sum.netAmount || 0),
+          avgDaily: Math.round(Number(agg._avg.netAmount || 0)),
+          maxDay: Number(agg._max.netAmount || 0),
+          minDay: Number(agg._min.netAmount || 0),
+          totalTrips: Number(tripSum._sum.tripsCount || 0),
           dayCount: agg._count,
         },
       });
@@ -139,10 +139,10 @@ const earningsController = {
       // Convert BigInt fields
       const data = earnings.map((e) => ({
         ...e,
-        totalAmount: Number(e.totalAmount),
-        baseAmount: Number(e.baseAmount),
-        incentiveAmount: Number(e.incentiveAmount),
-        tipAmount: Number(e.tipAmount),
+        grossAmount: Number(e.grossAmount),
+        netAmount: Number(e.netAmount),
+        platformDeductions: Number(e.platformDeductions),
+        totalAmount: Number(e.netAmount), // for frontend compatibility
       }));
 
       res.json({
@@ -173,11 +173,10 @@ const earningsController = {
           userId: req.user.id,
           platform,
           date: date ? new Date(date) : new Date(),
-          totalAmount: BigInt(totalAmount),
-          baseAmount: BigInt(totalAmount),
-          incentiveAmount: BigInt(0),
-          tipAmount: BigInt(0),
-          tripCount: tripCount || 0,
+          grossAmount: BigInt(totalAmount),
+          netAmount: BigInt(totalAmount),
+          platformDeductions: BigInt(0),
+          tripsCount: tripCount || 0,
           source: 'manual',
         },
       });
@@ -188,10 +187,10 @@ const earningsController = {
         success: true,
         data: {
           ...earning,
-          totalAmount: Number(earning.totalAmount),
-          baseAmount: Number(earning.baseAmount),
-          incentiveAmount: Number(earning.incentiveAmount),
-          tipAmount: Number(earning.tipAmount),
+          grossAmount: Number(earning.grossAmount),
+          netAmount: Number(earning.netAmount),
+          platformDeductions: Number(earning.platformDeductions),
+          totalAmount: Number(earning.netAmount), // for frontend compatibility
         },
       });
     } catch (error) {
@@ -231,12 +230,11 @@ const earningsController = {
           userId: req.user.id,
           platform,
           date: extracted.date || new Date(),
-          totalAmount: BigInt(extracted.totalEarnings),
-          baseAmount: BigInt(Math.max(0, extracted.totalEarnings - extracted.incentive)),
-          incentiveAmount: BigInt(extracted.incentive),
-          tipAmount: BigInt(0),
-          tripCount: extracted.tripCount,
-          source: 'screenshot',
+          grossAmount: BigInt(extracted.totalEarnings),
+          netAmount: BigInt(Math.max(0, extracted.totalEarnings - extracted.incentive)),
+          platformDeductions: BigInt(0),
+          tripsCount: extracted.tripCount,
+          source: 'screenshot_ocr',
         },
       });
 
@@ -244,10 +242,10 @@ const earningsController = {
         success: true,
         data: {
           ...earning,
-          totalAmount: Number(earning.totalAmount),
-          baseAmount: Number(earning.baseAmount),
-          incentiveAmount: Number(earning.incentiveAmount),
-          tipAmount: Number(earning.tipAmount),
+          grossAmount: Number(earning.grossAmount),
+          netAmount: Number(earning.netAmount),
+          platformDeductions: Number(earning.platformDeductions),
+          totalAmount: Number(earning.netAmount), // for frontend compatibility
           ocrConfidence: 'medium',
         },
       });

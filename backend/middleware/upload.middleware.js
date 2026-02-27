@@ -6,7 +6,7 @@
 const multer = require('multer');
 const path = require('path');
 
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.ms-excel'];
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'application/pdf', 'text/csv', 'application/vnd.ms-excel', 'application/zip', 'application/x-zip-compressed'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 
 const storage = multer.memoryStorage();

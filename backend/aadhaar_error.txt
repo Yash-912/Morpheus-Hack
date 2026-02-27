@@ -1,0 +1,4 @@
+{
+  "stack": "Error: Entry encrypted\n    at FsRead.callback (C:\\Users\\shrav\\Downloads\\morphy2\\Morpheus-Hack\\backend\\node_modules\\node-stream-zip\\node_stream_zip.js:475:30)\n    at FsRead.readCallback (C:\\Users\\shrav\\Downloads\\morphy2\\Morpheus-Hack\\backend\\node_modules\\node-stream-zip\\node_stream_zip.js:996:25)\n    at FSReqCallback.wrapper [as oncomplete] (node:fs:665:5)",
+  "message": "Entry encrypted"
+}

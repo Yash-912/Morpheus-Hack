@@ -234,6 +234,83 @@ const authController = {
   },
 
   /**
+   * POST /api/auth/kyc/aadhaar/upload
+   * Aadhaar Offline XML upload — parse ZIP, verify signature, extract data.
+   */
+  async uploadAadhaarXml(req, res, next) {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'NO_FILE', message: 'Aadhaar ZIP file is required' },
+        });
+      }
+
+      const shareCode = req.body.shareCode || req.body.share_code;
+      if (!shareCode || shareCode.length !== 4) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'INVALID_SHARE_CODE', message: 'A 4-digit share code is required' },
+        });
+      }
+
+      // 1. Parse ZIP → extract XML
+      const xmlString = await AadhaarService.parseOfflineXml(req.file.buffer, shareCode);
+
+      // 2. Verify UIDAI digital signature
+      await AadhaarService.verifySignature(xmlString);
+
+      // 3. Extract KYC data
+      const kycData = await AadhaarService.extractKycData(xmlString, shareCode);
+
+      // 4. Validate XML age
+      AadhaarService.validateAge(kycData.generatedAt);
+
+      // 5. Update user in database
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: {
+          name: kycData.name,
+          aadhaarLast4: kycData.aadhaarLast4,
+          kycStatus: 'verified',
+          kycMethod: 'aadhaar_offline_xml',
+          city: kycData.city || undefined,
+        },
+      });
+
+      // 6. Store photo in Redis for selfie match (1 hour TTL)
+      if (kycData.photoBase64) {
+        await redisClient.set(
+          `kyc_photo:${req.user.id}`,
+          kycData.photoBase64,
+          'EX',
+          3600
+        );
+      }
+
+      logger.info('Aadhaar Offline XML KYC verified', {
+        userId: req.user.id,
+        name: kycData.name,
+        aadhaarLast4: kycData.aadhaarLast4,
+      });
+
+      res.json({
+        success: true,
+        data: {
+          name: kycData.name,
+          dob: kycData.dob,
+          city: kycData.city,
+          aadhaarLast4: kycData.aadhaarLast4,
+          kycStatus: 'verified',
+          kycMethod: 'aadhaar_offline_xml',
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /**
    * POST /api/auth/kyc/selfie
    * Upload selfie, match against Aadhaar photo, enroll face.
    */
@@ -250,17 +327,10 @@ const authController = {
       const s3Key = `kyc/${req.user.id}/selfie_${Date.now()}.jpg`;
       await StorageService.uploadFile(req.file.buffer, s3Key, req.file.mimetype);
 
-      // Liveness check
-      const liveness = await BiometricService.livenessCheck(req.file.buffer);
-      if (!liveness.isLive) {
-        return res.status(400).json({
-          success: false,
-          error: { code: 'LIVENESS_FAILED', message: 'Liveness check failed. Please use a live photo.' },
-        });
-      }
-
-      // Enroll face
-      await BiometricService.enrollFace(req.user.id, req.file.buffer);
+      // --- BYPASS AWS REKOGNITION ---
+      // The user requested to skip actual facial enrollment/liveness checks 
+      // due to continuous failures with their webcam feed.
+      // We are mocking a successful verification here.
 
       // Update KYC status to fully verified
       await prisma.user.update({
@@ -272,7 +342,7 @@ const authController = {
         success: true,
         data: {
           kycStatus: 'verified',
-          message: 'KYC verification complete!',
+          message: 'KYC verified (Face check skipped by user request).',
         },
       });
     } catch (error) {

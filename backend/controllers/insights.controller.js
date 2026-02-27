@@ -13,7 +13,7 @@ const insightsController = {
    */
   async algoInsights(req, res, next) {
     try {
-      const where = { active: true };
+      const where = {};
       if (req.query.platform) where.platform = req.query.platform;
       if (req.query.city) where.city = req.query.city;
       if (req.query.type) where.type = req.query.type;
@@ -96,7 +96,6 @@ const insightsController = {
           type: type || 'user_reported',
           reportedBy: req.user.id,
           upvotes: 0,
-          active: true,
         },
       });
 
@@ -120,7 +119,7 @@ const insightsController = {
   async performance(req, res, next) {
     try {
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-      const city = user.primaryCity || 'bangalore';
+      const city = user.city || 'bangalore';
 
       // Last 30 days analytics
       const thirtyDaysAgo = new Date();
@@ -129,8 +128,8 @@ const insightsController = {
       // User stats
       const userStats = await prisma.earning.aggregate({
         where: { userId: req.user.id, date: { gte: thirtyDaysAgo } },
-        _sum: { amount: true },
-        _avg: { amount: true },
+        _sum: { netAmount: true },
+        _avg: { netAmount: true },
         _count: true,
       });
 
@@ -143,23 +142,23 @@ const insightsController = {
       // City average — all users in the same city
       const cityStats = await prisma.earning.aggregate({
         where: {
-          user: { primaryCity: city },
+          user: { city: city },
           date: { gte: thirtyDaysAgo },
         },
-        _avg: { amount: true },
+        _avg: { netAmount: true },
       });
 
       // Count active users in city
       const cityUsers = await prisma.earning.groupBy({
         by: ['userId'],
         where: {
-          user: { primaryCity: city },
+          user: { city: city },
           date: { gte: thirtyDaysAgo },
         },
       });
 
-      const userAvg = Number(userStats._avg.amount || 0);
-      const cityAvg = Number(cityStats._avg.amount || 0);
+      const userAvg = Number(userStats._avg.netAmount || 0);
+      const cityAvg = Number(cityStats._avg.netAmount || 0);
       const comparison = cityAvg > 0
         ? Math.round(((userAvg - cityAvg) / cityAvg) * 100)
         : 0;
@@ -170,7 +169,7 @@ const insightsController = {
           period: '30d',
           city,
           user: {
-            totalEarnings: Number(userStats._sum.amount || 0),
+            totalEarnings: Number(userStats._sum.netAmount || 0),
             avgPerEntry: userAvg,
             totalEntries: userStats._count,
             workDays: userWorkDays.length,

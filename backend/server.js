@@ -10,6 +10,8 @@ const app = require('./app');
 const { connectDatabase, disconnect: disconnectDB } = require('./config/database');
 const { connectRedis, disconnectRedis } = require('./config/redis');
 const logger = require('./utils/logger.utils');
+const BiometricService = require('./services/biometric.service');
+const StorageService = require('./services/storage.service');
 
 const PORT = process.env.PORT || 5001;
 
@@ -69,7 +71,11 @@ async function startServer() {
     // 3. Make Socket.io accessible globally for workers
     global.__io = io;
 
-    // 4. Start Bull queue workers
+    // 4. Ensure AWS Rekognition Collection & S3 Bucket exist
+    await BiometricService.ensureCollection();
+    await StorageService.ensureBucket();
+
+    // 5. Start Bull queue workers
     require('./jobs/workers/payout.worker');
     require('./jobs/workers/settlement.worker');
     require('./jobs/workers/notification.worker');
