@@ -18,8 +18,8 @@ router.use(authMiddleware);
 router.get(
   '/jobs',
   [
-    query('lat').isFloat({ min: -90, max: 90 }).withMessage('Valid latitude required'),
-    query('lng').isFloat({ min: -180, max: 180 }).withMessage('Valid longitude required'),
+    query('lat').optional().isFloat({ min: -90, max: 90 }).withMessage('Valid latitude required'),
+    query('lng').optional().isFloat({ min: -180, max: 180 }).withMessage('Valid longitude required'),
     query('radius').optional().isInt({ min: 1, max: 50 }).withMessage('Radius 1-50 km'),
     query('type').optional().isString(),
   ],

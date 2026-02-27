@@ -176,6 +176,10 @@ const earningsController = {
           netAmount: BigInt(totalAmount),
           platformDeductions: BigInt(0),
           tripsCount: tripCount || 0,
+          grossAmount: BigInt(totalAmount),
+          netAmount: BigInt(totalAmount),
+          platformDeductions: BigInt(0),
+          tripsCount: tripCount || 0,
           source: 'manual',
         },
       });

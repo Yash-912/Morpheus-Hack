@@ -69,4 +69,8 @@ module.exports = {
   // ---- JWT ----
   JWT_ACCESS_EXPIRES: process.env.JWT_ACCESS_EXPIRES || '15m',
   JWT_REFRESH_EXPIRES: process.env.JWT_REFRESH_EXPIRES || '30d',
+
+  // ---- Aadhaar Offline XML ----
+  AADHAAR_XML_MAX_AGE_DAYS: 90,
+  AADHAAR_SHARE_CODE_LENGTH: 4,
 };

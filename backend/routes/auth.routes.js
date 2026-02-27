@@ -60,7 +60,7 @@ router.post(
   authController.initAadhaarKyc
 );
 
-// POST /api/auth/kyc/aadhaar/verify
+// POST /api/auth/kyc/aadhaar/verify (Setu DigiLocker — fallback)
 router.post(
   '/kyc/aadhaar/verify',
   authMiddleware,
@@ -69,6 +69,14 @@ router.post(
   ],
   validate,
   authController.verifyAadhaarKyc
+);
+
+// POST /api/auth/kyc/aadhaar/upload (Offline XML — primary)
+router.post(
+  '/kyc/aadhaar/upload',
+  authMiddleware,
+  uploadSingle('aadhaar_zip'),
+  authController.uploadAadhaarXml
 );
 
 // POST /api/auth/kyc/selfie

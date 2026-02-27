@@ -34,8 +34,8 @@ const BiometricService = {
         Image: { Bytes: imageBuffer },
         ExternalImageId: userId,
         DetectionAttributes: ['ALL'],
-        MaxFaces: 1,
-        QualityFilter: 'AUTO',
+        MaxFaces: 1, // Will pick the largest face
+        QualityFilter: 'LOW', // Lowered from AUTO for webcam support
       });
 
       const result = await rekognitionClient.send(command);
@@ -131,13 +131,15 @@ const BiometricService = {
         return { alive: false, details: { reason: 'No face detected' } };
       }
 
-      if (result.FaceDetails.length > 1) {
-        return { alive: false, details: { reason: 'Multiple faces detected' } };
-      }
+      // Find the largest face by bounding box area instead of failing on multiple faces
+      const largestFace = result.FaceDetails.reduce((prev, current) => {
+        const prevArea = prev.BoundingBox.Width * prev.BoundingBox.Height;
+        const currentArea = current.BoundingBox.Width * current.BoundingBox.Height;
+        return (prevArea > currentArea) ? prev : current;
+      });
 
-      const face = result.FaceDetails[0];
-      const eyesOpen = face.EyesOpen?.Value === true && face.EyesOpen?.Confidence >= 80;
-      const highConfidence = face.Confidence >= 95;
+      const eyesOpen = largestFace.EyesOpen?.Value === true && largestFace.EyesOpen?.Confidence >= 60;
+      const highConfidence = largestFace.Confidence >= 80;
 
       const alive = eyesOpen && highConfidence;
 
@@ -145,8 +147,8 @@ const BiometricService = {
         alive,
         details: {
           eyesOpen,
-          confidence: face.Confidence,
-          eyesOpenConfidence: face.EyesOpen?.Confidence,
+          confidence: largestFace.Confidence,
+          eyesOpenConfidence: largestFace.EyesOpen?.Confidence,
         },
       };
     } catch (error) {

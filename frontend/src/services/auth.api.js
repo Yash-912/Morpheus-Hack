@@ -30,3 +30,16 @@ export const verifySelfieApi = async (imageBlob) => {
     });
     return data;
 };
+
+export const uploadAadhaarXmlApi = async (zipFile, shareCode) => {
+    const formData = new FormData();
+    formData.append('aadhaar_zip', zipFile);
+    formData.append('shareCode', shareCode);
+
+    const { data } = await api.post('/auth/kyc/aadhaar/upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return data;
+};

@@ -2,7 +2,7 @@
 // Storage Service — AWS S3 file operations
 // ============================================================
 
-const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand } = require('@aws-sdk/client-s3');
+const { PutObjectCommand, GetObjectCommand, DeleteObjectCommand, CreateBucketCommand, HeadBucketCommand } = require('@aws-sdk/client-s3');
 const { getSignedUrl: s3GetSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const { s3Client } = require('../config/aws');
 const logger = require('../utils/logger.utils');
@@ -85,6 +85,28 @@ const StorageService = {
     } catch (error) {
       logger.error('S3 delete failed:', error.message);
       return false;
+    }
+  },
+
+  /**
+   * Ensure the S3 bucket exists (call once at startup).
+   */
+  async ensureBucket() {
+    if (!s3Client) return;
+    try {
+      await s3Client.send(new HeadBucketCommand({ Bucket: BUCKET }));
+    } catch (error) {
+      if (error.name === 'NotFound') {
+        logger.info(`S3 bucket ${BUCKET} not found. Creating it now...`);
+        const createParams = { Bucket: BUCKET };
+        if (REGION !== 'us-east-1') {
+          createParams.CreateBucketConfiguration = { LocationConstraint: REGION };
+        }
+        await s3Client.send(new CreateBucketCommand(createParams));
+        logger.info(`✅ S3 bucket created: ${BUCKET}`);
+      } else {
+        logger.error(`Error checking S3 bucket ${BUCKET}:`, error);
+      }
     }
   },
 };
