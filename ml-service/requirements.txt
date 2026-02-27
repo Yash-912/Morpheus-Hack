@@ -30,3 +30,6 @@ psycopg2-binary>=2.9.0
 
 # Task Scheduling
 apscheduler>=3.10.0
+
+# Network requests
+requests>=2.31.0
