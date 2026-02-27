@@ -59,7 +59,7 @@ async function checkHealth() {
 
 // Helper: directly call getUserByPhone (backend internal endpoint)
 async function testBackendAuth() {
-    const BACKEND = process.env.GIGPAY_API_URL || 'http://localhost:5000';
+    const BACKEND = process.env.GIGPAY_API_URL || 'http://localhost:5002';
     const SECRET = process.env.GIGPAY_BOT_SECRET || '';
     try {
         const res = await axios.get(`${BACKEND}/api/users/by-phone`, {

@@ -9,6 +9,10 @@
 
 require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
 const { prisma } = require('../../config/database');
+const { PrismaClient } = require('@prisma/client');
+const seedrandom = require('seedrandom');
+
+
 const rng = seedrandom('gigpay2023');
 
 // ── Hub definitions ─────────────────────────────────────────────

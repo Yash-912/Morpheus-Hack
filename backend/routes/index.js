@@ -25,5 +25,6 @@ router.use('/forecast', require('./forecast.routes'));
 router.use('/location', require('./location.routes'));
 router.use('/zones', require('./zones.routes'));
 router.use('/webhooks', require('./webhooks.routes'));
+router.use('/sms', require('./sms.routes'));
 
 module.exports = router;

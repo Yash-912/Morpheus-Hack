@@ -5,7 +5,7 @@
 const axios = require('axios');
 const logger = require('../utils/logger');
 
-const BASE_URL = process.env.GIGPAY_API_URL || 'http://localhost:5000';
+const BASE_URL = process.env.GIGPAY_API_URL || 'http://localhost:5002';
 const BOT_SECRET = process.env.GIGPAY_BOT_SECRET || '';
 
 const api = axios.create({

@@ -69,9 +69,9 @@ const insightsController = {
         data: {
           platform,
           city,
-          title: pattern || 'User reported insight',
-          body: pattern || '',
-          insightType: type || 'acceptance_rate',
+          insightType: type || 'idle_time',
+          title: pattern.substring(0, 100),
+          body: pattern,
           upvotes: 0,
         },
       });

@@ -61,8 +61,8 @@ async function connectDatabase() {
       console.log('✅ Migrations applied');
     }
   } catch (error) {
-    console.error('❌ PostgreSQL connection failed:', error.message);
-    throw error;
+    console.warn('⚠️  PostgreSQL connection failed (will retry on first query):', error.message);
+    console.warn('   If using Neon free-tier, the database may be sleeping — it will wake on next request.');
   }
 }
 

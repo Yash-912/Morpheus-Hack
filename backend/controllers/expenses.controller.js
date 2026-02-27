@@ -246,7 +246,7 @@ const expensesController = {
           notes: 'Scanned from receipt',
           merchant,
           date: new Date(),
-          source: 'receipt_ocr',
+          source: 'receipt_scan',
           isTaxDeductible: false,
         },
       });

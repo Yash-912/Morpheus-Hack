@@ -33,6 +33,9 @@ import WorkerProfile from './pages/Community/WorkerProfile';
 import LinkedAccounts from './pages/Profile/LinkedAccounts';
 import Support from './pages/Profile/Support';
 
+// SMS Transactions
+import SmsTransactions from './pages/SmsTransactions';
+
 // Onboarding Pages
 import Landing from './pages/Onboarding/Landing';
 import PhoneEntry from './pages/Onboarding/PhoneEntry';
@@ -91,6 +94,7 @@ function App() {
                   <Route path="/profile" element={<Profile />} />
                   <Route path="/profile/linked-accounts" element={<LinkedAccounts />} />
                   <Route path="/profile/support" element={<Support />} />
+                  <Route path="/sms-transactions" element={<SmsTransactions />} />
                   <Route path="/zones" element={<Zones />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>

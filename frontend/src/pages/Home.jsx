@@ -2,18 +2,24 @@ import { useEffect } from 'react';
 import { useUIStore } from '../store/ui.store';
 import { useEarnings } from '../hooks/useEarnings';
 import { useCommunity } from '../hooks/useCommunity'; // Added hook
+import { useSmsSync } from '../hooks/useSmsSync';
 import { EarningWidget } from '../components/ui/EarningWidget';
 import { ActionGrid } from '../components/ui/ActionGrid';
 import { Card, ActionCard } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
+import SMSPermission from '../components/expenses/SMSPermission';
 import { ArrowRight, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 
 const Home = () => {
     const setActiveTab = useUIStore(state => state.setActiveTab);
     const { today, isLoadingToday } = useEarnings();
     const navigate = useNavigate();
+
+    // SMS auto-sync
+    const { hasPermission, grantPermission, isSyncing, syncResult } = useSmsSync();
 
     // Fetch live community jobs around Bengaluru center for demo
     const { nearbyJobs, isLoadingNearby } = useCommunity(12.9716, 77.5946, 50);
@@ -22,8 +28,33 @@ const Home = () => {
         setActiveTab('home');
     }, [setActiveTab]);
 
+    // Show toast when new transactions are synced
+    useEffect(() => {
+        if (syncResult?.processing?.created > 0) {
+            toast.success(`📲 ${syncResult.processing.created} new transactions detected from SMS`);
+        }
+    }, [syncResult]);
+
     return (
         <div className="flex flex-col gap-6 animate-fade-in">
+            {/* SMS Permission Banner — shows once until user clicks Allow */}
+            {!hasPermission && (
+                <section>
+                    <SMSPermission
+                        onAllow={async () => {
+                            const result = await grantPermission();
+                            if (result?.synced > 0) {
+                                toast.success(`📲 ${result.synced} SMS messages synced`);
+                            }
+                        }}
+                        onDismiss={() => {
+                            // Dismiss but don't grant — will show again next visit
+                        }}
+                        isLoading={isSyncing}
+                    />
+                </section>
+            )}
+
             {/* Earnings Dashboard */}
             <section>
                 <EarningWidget

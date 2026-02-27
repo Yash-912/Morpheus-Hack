@@ -78,11 +78,11 @@ const earningsController = {
 
       const agg = await prisma.earning.aggregate({
         where,
-        _sum: { netAmount: true },
-        _avg: { netAmount: true },
+        _sum: { grossAmount: true, platformDeductions: true },
+        _avg: { grossAmount: true },
         _count: true,
-        _max: { netAmount: true },
-        _min: { netAmount: true },
+        _max: { grossAmount: true },
+        _min: { grossAmount: true },
       });
 
       const tripSum = await prisma.earning.aggregate({
@@ -94,10 +94,11 @@ const earningsController = {
         success: true,
         data: {
           period,
-          totalAmount: Number(agg._sum.netAmount || 0),
-          avgDaily: Math.round(Number(agg._avg.netAmount || 0)),
-          maxDay: Number(agg._max.netAmount || 0),
-          minDay: Number(agg._min.netAmount || 0),
+          totalAmount: Number(agg._sum.grossAmount || 0),
+          incentiveAmount: Number(agg._sum.platformDeductions || 0),
+          avgDaily: Math.round(Number(agg._avg.grossAmount || 0)),
+          maxDay: Number(agg._max.grossAmount || 0),
+          minDay: Number(agg._min.grossAmount || 0),
           totalTrips: Number(tripSum._sum.tripsCount || 0),
           dayCount: agg._count,
         },
@@ -173,6 +174,7 @@ const earningsController = {
           date: date ? new Date(date) : new Date(),
           grossAmount: BigInt(totalAmount),
           netAmount: BigInt(totalAmount),
+          platformDeductions: BigInt(0),
           tripsCount: tripCount || 0,
           source: 'manual',
         },
@@ -186,6 +188,7 @@ const earningsController = {
           ...earning,
           grossAmount: Number(earning.grossAmount),
           netAmount: Number(earning.netAmount),
+          platformDeductions: Number(earning.platformDeductions),
         },
       });
     } catch (error) {
@@ -227,6 +230,7 @@ const earningsController = {
           date: extracted.date || new Date(),
           grossAmount: BigInt(extracted.totalEarnings),
           netAmount: BigInt(Math.max(0, extracted.totalEarnings - extracted.incentive)),
+          platformDeductions: BigInt(extracted.incentive),
           tripsCount: extracted.tripCount,
           source: 'screenshot_ocr',
         },
@@ -238,6 +242,7 @@ const earningsController = {
           ...earning,
           grossAmount: Number(earning.grossAmount),
           netAmount: Number(earning.netAmount),
+          platformDeductions: Number(earning.platformDeductions),
           ocrConfidence: 'medium',
         },
       });

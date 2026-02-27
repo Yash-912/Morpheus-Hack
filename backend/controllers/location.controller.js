@@ -2,7 +2,8 @@
 // Location Controller — GPS tracking data storage and retrieval
 // ============================================================
 
-const { prisma } = require('../config/database');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 const logger = require('../utils/logger.utils');
 
 const locationController = {
