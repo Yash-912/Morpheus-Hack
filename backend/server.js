@@ -25,6 +25,7 @@ const io = new SocketIOServer(server, {
       process.env.FRONTEND_URL || 'http://localhost:3000',
       'http://localhost:3001',
       'http://localhost',
+      'https://localhost',
       'capacitor://localhost'
     ],
     methods: ['GET', 'POST'],
