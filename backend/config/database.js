@@ -53,13 +53,7 @@ async function connectDatabase() {
     await prisma.$queryRaw`SELECT 1 AS connected`;
     console.log('✅ PostgreSQL connected via Neon Serverless (WebSocket)');
 
-    // Run pending migrations in production
-    if (process.env.NODE_ENV === 'production') {
-      const { execSync } = require('child_process');
-      console.log('🔄 Running prisma migrate deploy...');
-      execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-      console.log('✅ Migrations applied');
-    }
+    // Migrations are handled manually in this project configuration
   } catch (error) {
     console.warn('⚠️  PostgreSQL connection failed (will retry on first query):', error.message);
     console.warn('   If using Neon free-tier, the database may be sleeping — it will wake on next request.');
