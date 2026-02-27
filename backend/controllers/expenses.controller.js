@@ -89,7 +89,7 @@ const expensesController = {
         byCategory[e.category].amount += amt;
         byCategory[e.category].count += 1;
 
-        if (e.taxDeductible) taxDeductibleTotal += amt;
+        if (e.isTaxDeductible) taxDeductibleTotal += amt;
       });
 
       res.json({
@@ -124,11 +124,11 @@ const expensesController = {
           userId: req.user.id,
           category,
           amount: BigInt(amount),
-          description: description || '',
+          notes: description || '',
           merchant: merchant || null,
           date: date ? new Date(date) : new Date(),
           source: 'manual',
-          taxDeductible,
+          isTaxDeductible: taxDeductible,
         },
       });
 
@@ -243,11 +243,11 @@ const expensesController = {
           userId: req.user.id,
           category: 'other',
           amount: BigInt(amount),
-          description: 'Scanned from receipt',
+          notes: 'Scanned from receipt',
           merchant,
           date: new Date(),
           source: 'receipt_scan',
-          taxDeductible: false,
+          isTaxDeductible: false,
         },
       });
 

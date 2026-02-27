@@ -37,6 +37,7 @@ enum EarningSource {
   api
   screenshot_ocr
   manual
+  sms_auto
 }
 
 enum PayoutType {
@@ -274,6 +275,9 @@ model User {
   notifications     Notification[]
   forecastData      ForecastData[]
   workerLocations   WorkerLocation[]
+  rawSmsMessages    RawSms[]
+  syncSessions      SyncSession[]
+  transactions      Transaction[]
 
   @@index([city])
   @@map("users")
@@ -793,4 +797,80 @@ model MumbaiGpsPoint {
   createdAt      DateTime @default(now()) @map("created_at")
 
   @@map("mumbai_gps_points")
+}
+
+// ============================================================
+// RAW SMS — Phase 1: filtered ingestion with sync tracking
+// ============================================================
+
+model RawSms {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  sender        String                          // phone number or short code
+  body          String                          // full SMS body
+  smsTimestamp  DateTime  @map("sms_timestamp") // when the SMS was received on device
+  syncedAt      DateTime  @default(now()) @map("synced_at")
+  processedAt   DateTime? @map("processed_at")  // null = not yet processed by ML
+  syncBatchId   String    @map("sync_batch_id") // links to SyncSession
+  discardReason String?   @map("discard_reason") // why filtered out (debugging)
+  isRelevant    Boolean   @default(true) @map("is_relevant") // false if filtered
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  syncSession   SyncSession @relation(fields: [syncBatchId], references: [id])
+  transaction   Transaction?  // parsed transaction (1:1)
+
+  @@unique([userId, sender, smsTimestamp])       // dedup
+  @@index([userId, syncedAt(sort: Desc)])
+  @@index([userId, smsTimestamp(sort: Desc)])
+  @@index([processedAt])
+  @@map("raw_sms")
+}
+
+// ============================================================
+// SYNC SESSIONS — tracks each SMS sync attempt
+// ============================================================
+
+model SyncSession {
+  id                   String    @id @default(uuid())
+  userId               String    @map("user_id")
+  startedAt            DateTime  @default(now()) @map("started_at")
+  completedAt          DateTime? @map("completed_at")
+  totalScanned         Int       @default(0) @map("total_scanned")
+  newStored            Int       @default(0) @map("new_stored")
+  duplicatesSkipped    Int       @default(0) @map("duplicates_skipped")
+  irrelevantDiscarded  Int       @default(0) @map("irrelevant_discarded")
+  status               String    @default("pending") // pending | success | partial | failed
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages RawSms[]
+
+  @@index([userId, startedAt(sort: Desc)])
+  @@map("sync_sessions")
+}
+
+// ============================================================
+// TRANSACTIONS — Phase 2: parsed financial events from SMS
+// ============================================================
+
+model Transaction {
+  id            String    @id @default(uuid())
+  userId        String    @map("user_id")
+  rawSmsId      String    @unique @map("raw_sms_id")
+  amount        Float                           // in rupees
+  direction     String                          // "credit" | "debit"
+  category      String                          // INCOME, FOOD, FUEL, etc.
+  merchant      String?                         // extracted merchant name
+  sender        String                          // original SMS sender ID
+  smsTimestamp  DateTime  @map("sms_timestamp") // when the SMS was received
+  parsedAt      DateTime  @default(now()) @map("parsed_at")
+  confidence    Float                           // 0.0 to 1.0
+  rawBody       String    @map("raw_body")      // original SMS text
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rawSms        RawSms    @relation(fields: [rawSmsId], references: [id])
+
+  @@index([userId, smsTimestamp(sort: Desc)])
+  @@index([userId, category])
+  @@index([direction])
+  @@map("transactions")
 }

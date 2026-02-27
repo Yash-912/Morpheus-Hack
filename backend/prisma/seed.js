@@ -30,9 +30,12 @@ async function main() {
 
   for (const flag of featureFlags) {
     await prisma.featureFlag.upsert({
-      where: { key: flag.key },
-      update: { description: flag.description },
-      create: flag,
+      where: { name: flag.key },
+      update: { enabled: flag.enabled },
+      create: {
+        name: flag.key,
+        enabled: flag.enabled,
+      },
     });
   }
 
@@ -50,10 +53,10 @@ async function main() {
         phone: '+919999900000',
         name: 'Test Worker',
         city: 'Mumbai',
-        preferredLanguage: 'en',
+        languagePref: 'en',
         walletBalance: BigInt(50000_00),      // ₹50,000
-        totalEarnings: BigInt(250000_00),     // ₹2,50,000
-        totalWithdrawals: BigInt(200000_00),  // ₹2,00,000
+        walletLifetimeEarned: BigInt(250000_00),     // ₹2,50,000
+        walletLifetimeWithdrawn: BigInt(200000_00),  // ₹2,00,000
         kycStatus: 'verified',
       },
     });
@@ -69,8 +72,8 @@ async function main() {
       create: {
         userId: testUser.id,
         platform: 'zomato',
-        accountId: 'ZOM-TEST-001',
-        connected: true,
+        platformUserId: 'ZOM-TEST-001',
+        isActive: true,
       },
     });
 
@@ -82,29 +85,23 @@ async function main() {
       create: {
         userId: testUser.id,
         platform: 'swiggy',
-        accountId: 'SWG-TEST-002',
-        connected: true,
+        platformUserId: 'SWG-TEST-002',
+        isActive: true,
       },
     });
 
     console.log('  ✅ Platform accounts added');
 
     // Add bank account
-    await prisma.bankAccount.upsert({
-      where: {
-        userId_accountNumber: {
-          userId: testUser.id,
-          accountNumber: '1234567890',
-        },
-      },
-      update: {},
-      create: {
+    // Since there's no unique composed key in schema for upside down, we just create
+    await prisma.bankAccount.deleteMany({ where: { userId: testUser.id } });
+    await prisma.bankAccount.create({
+      data: {
         userId: testUser.id,
         accountNumber: '1234567890',
-        ifscCode: 'SBIN0001234',
+        ifsc: 'SBIN0001234',
         bankName: 'State Bank of India',
-        holderName: 'Test Worker',
-        primary: true,
+        isPrimary: true,
         verified: true,
       },
     });
@@ -118,13 +115,15 @@ async function main() {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
 
+      const amountVal = BigInt(Math.floor(800_00 + Math.random() * 400_00));
       earnings.push({
         userId: testUser.id,
         platform: i % 2 === 0 ? 'zomato' : 'swiggy',
         date,
-        amount: BigInt(Math.floor(800_00 + Math.random() * 400_00)), // ₹800-₹1200
-        trips: Math.floor(10 + Math.random() * 8),
-        onlineHours: 8 + Math.random() * 4,
+        grossAmount: amountVal,
+        netAmount: amountVal,
+        tripsCount: Math.floor(10 + Math.random() * 8),
+        hoursWorked: 8 + Math.random() * 4,
         source: 'manual',
       });
     }
@@ -158,11 +157,78 @@ async function main() {
         type: 'system',
         title: 'Welcome to GigPay!',
         body: 'Start by connecting your platform accounts to track earnings.',
-        channel: 'in_app',
+        channels: ['in_app'],
       },
     });
 
     console.log('  ✅ Welcome notification added');
+
+    // Generate 500 mock GPS points for Mumbai (Hot Zone ML feature)
+    const mumbaiPoints = [];
+    const baseLat = 19.0760;
+    const baseLng = 72.8777;
+    for (let i = 0; i < 500; i++) {
+      mumbaiPoints.push({
+        lat: baseLat + (Math.random() - 0.5) * 0.1, // ~5km radius
+        lng: baseLng + (Math.random() - 0.5) * 0.1,
+        avgEarnings: 150 + Math.random() * 200,   // ₹150-350 per hr
+        avgIncentives: 20 + Math.random() * 50,
+        totalOrders: Math.floor(5 + Math.random() * 25),
+        activeWorkers: Math.floor(2 + Math.random() * 15),
+        createdAt: new Date(Date.now() - Math.random() * 86400000), // last 24h
+        areaHint: 'Andheri East',
+      });
+    }
+
+    await prisma.mumbaiGpsPoint.deleteMany({}); // clear old ones
+    await prisma.mumbaiGpsPoint.createMany({ data: mumbaiPoints });
+    console.log(`  ✅ 500 mock Mumbai GPS points added for Hot Zone ML`);
+
+    // Seed forecast_data from sample CSV (for earnings graph + ML predictions + AI insights)
+    const fs = require('fs');
+    const csvPath = require('path').resolve(__dirname, '../../ml-service/sample_earnings_60days.csv');
+    if (fs.existsSync(csvPath)) {
+      const csvText = fs.readFileSync(csvPath, 'utf-8');
+      const csvLines = csvText.trim().split('\n');
+      const header = csvLines[0].split(',').map(h => h.trim());
+      const colIdx = {};
+      header.forEach((h, i) => { colIdx[h] = i; });
+
+      // Seed for ALL users in the system
+      const allUsers = await prisma.user.findMany({ select: { id: true } });
+      for (const u of allUsers) {
+        // Clear old forecast data for this user
+        await prisma.forecastData.deleteMany({ where: { userId: u.id } });
+
+        const forecastRows = [];
+        for (let i = 1; i < csvLines.length; i++) {
+          const vals = csvLines[i].split(',').map(v => v.trim());
+          if (vals.length < header.length) continue;
+
+          const netEarnings = parseFloat(vals[colIdx['net_earnings']]) || 0;
+          const incentivesEarned = parseFloat(vals[colIdx['incentives_earned']]) || 0;
+
+          forecastRows.push({
+            userId: u.id,
+            date: new Date(vals[colIdx['date']]),
+            worked: parseInt(vals[colIdx['worked']]) || 0,
+            rainfallMm: parseFloat(vals[colIdx['rainfall_mm']]) || 0,
+            tempCelsius: parseFloat(vals[colIdx['temp_celsius']]) || 0,
+            averageRating: parseFloat(vals[colIdx['average_rating']]) || 0,
+            incentivesEarned,
+            netEarnings,
+            efficiencyRatio: parseFloat(vals[colIdx['efficiency_ratio']]) || 0,
+            totalEarnings: netEarnings + incentivesEarned,
+          });
+        }
+
+        await prisma.forecastData.createMany({ data: forecastRows });
+        console.log(`  ✅ ${forecastRows.length} forecast_data rows seeded for user ${u.id}`);
+      }
+    } else {
+      console.log('  ⚠️  sample_earnings_60days.csv not found — skipping forecast seed');
+    }
+
   }
 
   console.log('🌱 Seeding complete!');
