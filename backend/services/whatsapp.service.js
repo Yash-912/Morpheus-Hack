@@ -59,6 +59,120 @@ const WhatsAppService = {
   },
 
   /**
+   * Send interactive button message (up to 3 buttons).
+   * @param {string} phone
+   * @param {string} body — message body text
+   * @param {Array<{id: string, title: string}>} buttons — max 3
+   * @returns {Promise<boolean>}
+   */
+  async sendInteractiveButtons(phone, body, buttons) {
+    if (!META_TOKEN || !META_PHONE_ID) {
+      // Fallback to plain text with numbered options
+      const fallback = body + '\n\n' + buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
+      return WhatsAppService.sendMessage(phone, fallback);
+    }
+
+    try {
+      await axios.post(
+        META_API_URL,
+        {
+          messaging_product: 'whatsapp',
+          to: phone.replace('+', ''),
+          type: 'interactive',
+          interactive: {
+            type: 'button',
+            body: { text: body },
+            action: {
+              buttons: buttons.slice(0, 3).map(b => ({
+                type: 'reply',
+                reply: { id: b.id, title: b.title.substring(0, 20) },
+              })),
+            },
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${META_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000,
+        }
+      );
+      return true;
+    } catch (error) {
+      logger.warn('Interactive buttons failed, sending text fallback:', error.message);
+      const fallback = body + '\n\n' + buttons.map((b, i) => `${i + 1}. ${b.title}`).join('\n');
+      return WhatsAppService.sendMessage(phone, fallback);
+    }
+  },
+
+  /**
+   * Send interactive list message (menu with sections).
+   * @param {string} phone
+   * @param {string} body
+   * @param {string} buttonText — text on the list button
+   * @param {Array<{title: string, rows: Array<{id: string, title: string, description?: string}>}>} sections
+   * @returns {Promise<boolean>}
+   */
+  async sendInteractiveList(phone, body, buttonText, sections) {
+    if (!META_TOKEN || !META_PHONE_ID) {
+      let fallback = body + '\n\n';
+      for (const section of sections) {
+        fallback += `*${section.title}*\n`;
+        for (const row of section.rows) {
+          fallback += `  • ${row.title}${row.description ? ' — ' + row.description : ''}\n`;
+        }
+        fallback += '\n';
+      }
+      return WhatsAppService.sendMessage(phone, fallback);
+    }
+
+    try {
+      await axios.post(
+        META_API_URL,
+        {
+          messaging_product: 'whatsapp',
+          to: phone.replace('+', ''),
+          type: 'interactive',
+          interactive: {
+            type: 'list',
+            body: { text: body },
+            action: {
+              button: buttonText.substring(0, 20),
+              sections: sections.map(s => ({
+                title: s.title.substring(0, 24),
+                rows: s.rows.slice(0, 10).map(r => ({
+                  id: r.id,
+                  title: r.title.substring(0, 24),
+                  description: (r.description || '').substring(0, 72),
+                })),
+              })),
+            },
+          },
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${META_TOKEN}`,
+            'Content-Type': 'application/json',
+          },
+          timeout: 10000,
+        }
+      );
+      return true;
+    } catch (error) {
+      logger.warn('Interactive list failed, sending text fallback:', error.message);
+      let fallback = body + '\n';
+      for (const section of sections) {
+        fallback += `\n*${section.title}*\n`;
+        for (const row of section.rows) {
+          fallback += `  • ${row.title}\n`;
+        }
+      }
+      return WhatsAppService.sendMessage(phone, fallback);
+    }
+  },
+
+  /**
    * Send a template message (required for first-contact within 24h window).
    * @param {string} phone
    * @param {string} templateName
@@ -74,11 +188,11 @@ const WhatsAppService = {
     try {
       const components = params.length
         ? [
-            {
-              type: 'body',
-              parameters: params.map((p) => ({ type: 'text', text: p.text || p })),
-            },
-          ]
+          {
+            type: 'body',
+            parameters: params.map((p) => ({ type: 'text', text: p.text || p })),
+          },
+        ]
         : [];
 
       await axios.post(
