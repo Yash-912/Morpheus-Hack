@@ -42,15 +42,15 @@ dist/
 build/
 *.tsbuildinfo
 
-# Data & Models (large files)
-data/training/
-data/saved_models/
-*.keras
-*.h5
-*.joblib
-*.pkl
-*.pt
-*.pth
+# # Data & Models (large files)
+# data/training/
+# data/saved_models/
+# *.keras
+# *.h5
+# *.joblib
+# *.pkl
+# *.pt
+# *.pth
 
 # Uploads
 uploads/
