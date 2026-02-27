@@ -254,7 +254,7 @@ const authController = {
         data: {
           name: kycData.name,
           kycStatus: 'verified',
-          message: 'DigiLocker KYC verified. Please complete selfie verification.',
+          message: 'DigiLocker KYC verified successfully.',
         },
       });
     } catch (error) {

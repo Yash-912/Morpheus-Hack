@@ -235,10 +235,10 @@ const AadhaarKYC = () => {
 
                         <div className="w-full mt-auto pb-4 pt-12">
                             <Button
-                                onClick={() => navigate('/onboarding/selfie')}
+                                onClick={() => navigate('/onboarding/platforms')}
                                 className="w-full"
                             >
-                                Continue to Selfie
+                                Continue to Platforms
                             </Button>
                         </div>
                     </div>
