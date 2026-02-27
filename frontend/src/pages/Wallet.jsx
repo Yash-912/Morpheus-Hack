@@ -5,7 +5,9 @@ import { Badge } from '../components/ui/Badge';
 import { ArrowRight, History, ArrowUpRight, ArrowDownLeft, ShieldCheck, PiggyBank, Zap, Shield } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/ui.store';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { toast } from 'react-hot-toast';
+import StripeCheckoutModal from '../components/payment/StripeCheckoutModal';
 
 const formatRupee = (paise) => {
     if (paise == null) return '0.00';
@@ -16,6 +18,7 @@ const Wallet = () => {
     const { balance, history, isLoadingBalance } = usePayouts();
     const navigate = useNavigate();
     const setActiveTab = useUIStore(state => state.setActiveTab);
+    const [isStripeModalOpen, setIsStripeModalOpen] = useState(false);
 
     useEffect(() => {
         setActiveTab('wallet');
@@ -36,7 +39,7 @@ const Wallet = () => {
                 <div className="flex justify-between items-start mb-6 relative z-10">
                     <div>
                         <p className="text-body-sm text-white/70 mb-1">Available for Withdrawal</p>
-                        <h2 className="text-display-md font-syne font-bold">
+                        <h2 className="text-display-md font-syne font-bold text-white" style={{ color: '#FFFFFF' }}>
                             {isLoadingBalance ? '₹---' : formatRupee(balance?.walletBalance)}
                         </h2>
                     </div>
@@ -141,6 +144,17 @@ const Wallet = () => {
                     )}
                 </div>
             </section>
+
+            <StripeCheckoutModal
+                isOpen={isStripeModalOpen}
+                onClose={() => setIsStripeModalOpen(false)}
+                amount={500} // Hardcoded ₹500 for demo
+                onSuccess={() => {
+                    setIsStripeModalOpen(false);
+                    toast.success('Payment successful! ₹500 added to wallet.');
+                    setTimeout(() => window.location.reload(), 2000);
+                }}
+            />
         </div>
     );
 };

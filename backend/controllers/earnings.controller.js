@@ -270,6 +270,85 @@ const earningsController = {
       next(error);
     }
   },
+
+  /**
+   * POST /api/earnings/sync-sms
+   * // LAYER 1 — ledger update only, no Stripe calls
+   */
+  async syncEarningsFromSms(req, res, next) {
+    try {
+      const { messages = [] } = req.body;
+      let detectedCount = 0;
+
+      for (const msg of messages) {
+        const { body, sender, timestamp } = msg;
+        if (!body) continue;
+
+        const bodyLower = body.toLowerCase();
+        let platform = null;
+        let amount = 0;
+
+        // Simple pattern matching for hackathon
+        const match = body.match(/(?:(?:rs\.?|inr|₹)\s*(\d+(?:\.\d{1,2})?))|(\d+(?:\.\d{1,2})?)\s*(?:rs\.?|inr|₹)/i);
+
+        if (bodyLower.includes('zomato') || sender?.toLowerCase().includes('zomato')) {
+          platform = 'zomato';
+        } else if (bodyLower.includes('swiggy') || sender?.toLowerCase().includes('swiggy')) {
+          platform = 'swiggy';
+        } else if (bodyLower.includes('uber') || sender?.toLowerCase().includes('uber')) {
+          platform = 'uber';
+        } else if (bodyLower.includes('ola') || sender?.toLowerCase().includes('ola')) {
+          platform = 'ola';
+        } else if (bodyLower.includes('blinkit') || sender?.toLowerCase().includes('blinkit')) {
+          platform = 'blinkit';
+        } else if (bodyLower.includes('zepto') || sender?.toLowerCase().includes('zepto')) {
+          platform = 'zepto';
+        } else if (bodyLower.includes('dunzo') || sender?.toLowerCase().includes('dunzo')) {
+          platform = 'dunzo';
+        }
+
+        if (platform && match) {
+          const matchedAmountStr = match[1] || match[2];
+          amount = Math.round(parseFloat(matchedAmountStr) * 100); // convert to paise
+
+          if (amount > 0) {
+            // Create Earning record
+            await prisma.earning.create({
+              data: {
+                userId: req.user.id,
+                platform: platform,
+                grossAmount: BigInt(amount),
+                netAmount: BigInt(amount),
+                status: "pending_settlement",
+                source: "sms_auto",
+                date: timestamp ? new Date(timestamp) : new Date()
+              }
+            });
+
+            // Update user.walletBalance += detected amount (ledger only)
+            await prisma.user.update({
+              where: { id: req.user.id },
+              data: {
+                walletBalance: { increment: BigInt(amount) },
+                walletLifetimeEarned: { increment: BigInt(amount) }
+              }
+            });
+
+            detectedCount++;
+          }
+        }
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          detectedCount
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 };
 
 module.exports = earningsController;
