@@ -27,7 +27,8 @@ const PhoneEntry = () => {
             setStep(2);
             toast.success('OTP sent successfully (Simulated)');
         } catch (err) {
-            toast.error('Failed to send OTP');
+            toast.error('Failed to send OTP: ' + (err.message || 'Unknown network error'));
+            console.error(err);
         }
     };
 
