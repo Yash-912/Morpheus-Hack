@@ -27,7 +27,9 @@ app.use(
   cors({
     origin: [
       process.env.FRONTEND_URL || 'http://localhost:3000',
-      'http://localhost:3001'
+      'http://localhost:3001',
+      'http://localhost',
+      'capacitor://localhost'
     ],
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
