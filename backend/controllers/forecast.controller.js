@@ -54,13 +54,13 @@ const forecastController = {
         try {
             const userId = req.user.id;
 
-            // Look for the sample CSV in the ml-service directory
-            const csvPath = path.resolve(__dirname, '../../ml-service/sample_earnings_60days.csv');
+            // Look for the sample CSV in the local data directory
+            const csvPath = path.resolve(__dirname, '../data/sample_earnings_60days.csv');
 
             if (!fs.existsSync(csvPath)) {
                 return res.status(404).json({
                     success: false,
-                    error: 'Sample CSV not found at ml-service/sample_earnings_60days.csv',
+                    error: 'Sample CSV not found at backend/data/sample_earnings_60days.csv',
                 });
             }
 
