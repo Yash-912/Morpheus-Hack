@@ -26,6 +26,9 @@ model User {
   walletLifetimeEarned    BigInt            @default(0) @map("wallet_lifetime_earned")
   walletLifetimeWithdrawn BigInt            @default(0) @map("wallet_lifetime_withdrawn")
   gigScore                Int               @default(0) @map("gig_score")
+  genesisScore            Int?              @map("genesis_score")
+  onboardingTier          Int               @default(1) @map("onboarding_tier")
+  activeSavingsDeductionRate Float          @default(0) @map("active_savings_deduction_rate")
   subscriptionTier        SubscriptionTier  @default(free) @map("subscription_tier")
   fcmToken                String?           @map("fcm_token")
   whatsappOptIn           Boolean           @default(false) @map("whatsapp_opt_in")
@@ -53,6 +56,10 @@ model User {
   taxRecords              TaxRecord[]
   transactions            transactions[]
   workerLocations         WorkerLocation[]
+  gigScoreHistory         GigScoreHistory[]
+  digitalGoldHolding      DigitalGoldHolding?
+  savingsGoals            SavingsGoal[]
+  creditLines             CreditLine[]
 
   @@index([city])
   @@map("users")
@@ -551,7 +558,6 @@ enum EarningSource {
   screenshot_ocr
   manual
   sms_auto
-  sms_auto
 }
 
 enum PayoutType {
@@ -599,6 +605,19 @@ enum ClaimStatus {
   approved
   rejected
 }
+
+// ==== GIGSCORE & FINANCIAL HUB ENUMS ====
+enum CreditLineType {
+  EMERGENCY
+  NBFC
+}
+
+enum CreditLineStatus {
+  ACTIVE
+  REPAID
+  DEFAULT
+}
+// ========================================
 
 enum InsurancePartner {
   acko
@@ -736,655 +755,68 @@ enum LanguagePref {
 }
 
 // ============================================================
-// 1. USERS
+// FINANCIAL HUB ENGINES (Hackathon Additions)
 // ============================================================
 
-model User {
-  id                String           @id @default(uuid())
-  phone             String           @unique
-  name              String?
-  email             String?
-  aadhaarLast4      String?          @map("aadhaar_last4")
-  pan               String?          // encrypted
-  kycStatus         KycStatus        @default(pending) @map("kyc_status")
-  kycMethod         String?          @map("kyc_method")
-  faceEmbedding     Bytes?           @map("face_embedding")
-  city              String?
-  homeLat           Float?           @map("home_lat")
-  homeLng           Float?           @map("home_lng")
+model GigScoreHistory {
+  id                        String   @id @default(uuid())
+  userId                    String   @map("user_id")
+  month                     DateTime
+  earningsConsistencyScore  Float    @map("earnings_consistency_score")
+  repaymentHistoryScore     Float    @map("repayment_history_score")
+  platformTenureScore       Float    @map("platform_tenure_score")
+  engagementScore           Float    @map("engagement_score")
+  financialDisciplineScore  Float    @map("financial_discipline_score")
+  totalScore                Int      @map("total_score")
 
-  // Wallet (embedded as columns for ACID safety)
-  walletBalance          BigInt       @default(0) @map("wallet_balance") // paise
-  walletLockedBalance    BigInt       @default(0) @map("wallet_locked_balance") // paise
-  walletLifetimeEarned   BigInt       @default(0) @map("wallet_lifetime_earned") // paise
-  walletLifetimeWithdrawn BigInt      @default(0) @map("wallet_lifetime_withdrawn") // paise
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  gigScore          Int              @default(0) @map("gig_score") // 0–850
-  subscriptionTier  SubscriptionTier @default(free) @map("subscription_tier")
-  fcmToken          String?          @map("fcm_token")
-  whatsappOptIn     Boolean          @default(false) @map("whatsapp_opt_in")
-  languagePref      LanguagePref     @default(en) @map("language_pref")
-  isActive          Boolean          @default(true) @map("is_active")
-  lastSeen          DateTime?        @map("last_seen")
-
-  // WebAuthn
-  webauthnCredentialId  String?      @map("webauthn_credential_id")
-  webauthnPublicKey     String?      @map("webauthn_public_key")
-
-  createdAt         DateTime         @default(now()) @map("created_at")
-  updatedAt         DateTime         @updatedAt @map("updated_at")
-
-  // Relations (one-to-many child tables)
-  platformAccounts  PlatformAccount[]
-  bankAccounts      BankAccount[]
-  earnings          Earning[]
-  payouts           Payout[]
-  loans             Loan[]
-  insurancePolicies InsurancePolicy[]
-  expenses          Expense[]
-  taxRecords        TaxRecord[]
-  postedJobs        CommunityJob[]   @relation("JobPoster")
-  assignedJobs      CommunityJob[]   @relation("JobWorker")
-  savings           Saving[]
-  notifications     Notification[]
-  forecastData      ForecastData[]
-  workerLocations   WorkerLocation[]
-  rawSmsMessages    RawSms[]
-  syncSessions      SyncSession[]
-  transactions      Transaction[]
-
-  @@index([city])
-  @@map("users")
+  @@index([userId, month])
+  @@map("gig_score_history")
 }
 
-// Normalized from User.platform_accounts[]
-model PlatformAccount {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  platform        Platform
-  platformUserId  String   @map("platform_user_id")
-  accessToken     String?  @map("access_token") // encrypted
-  linkedAt        DateTime @default(now()) @map("linked_at")
-  isActive        Boolean  @default(true) @map("is_active")
+model DigitalGoldHolding {
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id") // 1:1 holding summary per user
+  totalGrams           Float    @default(0) @map("total_grams")
+  averagePurchasePrice Float    @default(0) @map("average_purchase_price")
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([userId, platform])
-  @@index([platform])
-  @@map("platform_accounts")
+  @@map("digital_gold_holdings")
 }
 
-// Normalized from User.bank_accounts[]
-model BankAccount {
-  id              String   @id @default(uuid())
-  userId          String   @map("user_id")
-  upiId           String?  @map("upi_id")
-  accountNumber   String?  @map("account_number") // encrypted
-  ifsc            String?
-  bankName        String?  @map("bank_name")
-  isPrimary       Boolean  @default(false) @map("is_primary")
-  verified        Boolean  @default(false)
+model SavingsGoal {
+  id                   String   @id @default(uuid())
+  userId               String   @map("user_id")
+  title                String
+  targetAmount         Float    @map("target_amount")
+  currentAmount        Float    @default(0) @map("current_amount")
+  dailyDeductionLimit  Float    @map("daily_deduction_limit")
+  isCompleted          Boolean  @default(false) @map("is_completed")
 
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt            DateTime @default(now()) @map("created_at")
 
-  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@map("bank_accounts")
+  @@map("savings_goals")
 }
 
-// ============================================================
-// 2. EARNINGS
-// ============================================================
-
-model Earning {
-  id                String        @id @default(uuid())
-  userId            String        @map("user_id")
-  platform          Platform
-  date              DateTime      @db.Date
-  grossAmount       BigInt        @map("gross_amount") // paise
-  platformDeductions BigInt       @default(0) @map("platform_deductions") // paise
-  netAmount         BigInt        @map("net_amount") // paise
-  hoursWorked       Float?        @map("hours_worked")
-  tripsCount        Int?          @map("trips_count")
-  avgPerTrip        BigInt?       @map("avg_per_trip") // paise
-  zone              String?
-  source            EarningSource @default(manual)
-  rawScreenshotUrl  String?       @map("raw_screenshot_url")
-  verified          Boolean       @default(false)
-
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
-
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payoutEarnings    PayoutEarning[]
-
-  @@index([userId, date(sort: Desc)])
-  @@index([userId, platform, date(sort: Desc)])
-  @@map("earnings")
-}
-
-// ============================================================
-// 3. PAYOUTS
-// ============================================================
-
-model Payout {
-  id                      String       @id @default(uuid())
-  userId                  String       @map("user_id")
-  amount                  BigInt       // paise
-  fee                     BigInt       @default(0) // paise
-  netAmount               BigInt       @map("net_amount") // paise
-  type                    PayoutType
-  status                  PayoutStatus @default(pending)
-  upiId                   String?      @map("upi_id")
-  razorpayPayoutId        String?      @map("razorpay_payout_id")
-  razorpayFundAccountId   String?      @map("razorpay_fund_account_id")
-  initiatedAt             DateTime     @default(now()) @map("initiated_at")
-  completedAt             DateTime?    @map("completed_at")
-  failureReason           String?      @map("failure_reason")
-  settlementExpectedAt    DateTime?    @map("settlement_expected_at")
-  settledAt               DateTime?    @map("settled_at")
-
-  createdAt               DateTime     @default(now()) @map("created_at")
-  updatedAt               DateTime     @updatedAt @map("updated_at")
-
-  user                    User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  payoutEarnings          PayoutEarning[]
-  loanRepayments          LoanRepayment[]
-
-  @@index([userId, createdAt(sort: Desc)])
-  @@index([status])
-  @@map("payouts")
-}
-
-// Join table: Payout ↔ Earnings (many-to-many)
-model PayoutEarning {
-  id        String  @id @default(uuid())
-  payoutId  String  @map("payout_id")
-  earningId String  @map("earning_id")
-
-  payout    Payout  @relation(fields: [payoutId], references: [id], onDelete: Cascade)
-  earning   Earning @relation(fields: [earningId], references: [id], onDelete: Cascade)
-
-  @@unique([payoutId, earningId])
-  @@map("payout_earnings")
-}
-
-// ============================================================
-// 4. LOANS
-// ============================================================
-
-model Loan {
-  id                       String          @id @default(uuid())
-  userId                   String          @map("user_id")
-  amount                   BigInt          // paise
-  interestRate             Float           @map("interest_rate") // monthly %
-  totalRepayable           BigInt          @map("total_repayable") // paise
-  amountRepaid             BigInt          @default(0) @map("amount_repaid") // paise
-  status                   LoanStatus      @default(pending_approval)
-  disbursedAt              DateTime?       @map("disbursed_at")
-  dueDate                  DateTime?       @map("due_date")
-  repaymentMethod          RepaymentMethod @default(auto_deduct) @map("repayment_method")
-  autoDeductPercent        Float?          @map("auto_deduct_percent")
-  nbfcReferenceId          String?         @map("nbfc_reference_id")
-  creditScoreAtApplication Int?            @map("credit_score_at_application")
-  rejectionReason          String?         @map("rejection_reason")
-
-  createdAt                DateTime        @default(now()) @map("created_at")
-  updatedAt                DateTime        @updatedAt @map("updated_at")
-
-  user                     User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  repaymentHistory         LoanRepayment[]
-
-  @@index([userId])
-  @@index([status])
-  @@map("loans")
-}
-
-// Normalized from Loan.repayment_history[]
-model LoanRepayment {
-  id        String   @id @default(uuid())
-  loanId    String   @map("loan_id")
-  amount    BigInt   // paise
-  date      DateTime @default(now())
-  payoutId  String?  @map("payout_id")
-
-  loan      Loan     @relation(fields: [loanId], references: [id], onDelete: Cascade)
-  payout    Payout?  @relation(fields: [payoutId], references: [id], onDelete: SetNull)
-
-  @@index([loanId])
-  @@map("loan_repayments")
-}
-
-// ============================================================
-// 5. INSURANCE POLICIES
-// ============================================================
-
-model InsurancePolicy {
-  id               String                @id @default(uuid())
-  userId           String                @map("user_id")
-  type             InsuranceType
-  status           InsurancePolicyStatus @default(active)
-  premiumPaid      BigInt                @map("premium_paid") // paise
-  coverAmount      BigInt                @map("cover_amount") // paise
-  validFrom        DateTime              @map("valid_from")
-  validTo          DateTime              @map("valid_to")
-  partner          InsurancePartner
-  partnerPolicyId  String?               @map("partner_policy_id")
-
-  createdAt        DateTime              @default(now()) @map("created_at")
-  updatedAt        DateTime              @updatedAt @map("updated_at")
-
-  user             User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  claims           InsuranceClaim[]
-
-  @@index([userId])
-  @@index([status, validTo])
-  @@map("insurance_policies")
-}
-
-// Normalized from InsurancePolicy.claim embedded object
-model InsuranceClaim {
-  id              String       @id @default(uuid())
-  policyId        String       @map("policy_id")
-  submittedAt     DateTime     @default(now()) @map("submitted_at")
-  status          ClaimStatus  @default(pending)
-  amountClaimed   BigInt       @map("amount_claimed") // paise
-  amountApproved  BigInt?      @map("amount_approved") // paise
-  documents       String[]     // S3 URLs
-  notes           String?
-
-  updatedAt       DateTime     @updatedAt @map("updated_at")
-
-  policy          InsurancePolicy @relation(fields: [policyId], references: [id], onDelete: Cascade)
-
-  @@index([policyId])
-  @@map("insurance_claims")
-}
-
-// ============================================================
-// 6. EXPENSES
-// ============================================================
-
-model Expense {
-  id               String          @id @default(uuid())
-  userId           String          @map("user_id")
-  category         ExpenseCategory
-  amount           BigInt          // paise
-  merchant         String?
-  date             DateTime        @db.Date
-  source           ExpenseSource   @default(manual)
-  smsRaw           String?         @map("sms_raw") // encrypted
-  receiptUrl       String?         @map("receipt_url")
-  isTaxDeductible  Boolean         @default(false) @map("is_tax_deductible")
-  taxCategory      String?         @map("tax_category")
-  notes            String?
-
-  createdAt        DateTime        @default(now()) @map("created_at")
-  updatedAt        DateTime        @updatedAt @map("updated_at")
-
-  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, date(sort: Desc)])
-  @@index([userId, category])
-  @@map("expenses")
-}
-
-// ============================================================
-// 7. TAX RECORDS
-// ============================================================
-
-model TaxRecord {
-  id                  String         @id @default(uuid())
-  userId              String         @map("user_id")
-  financialYear       String         @map("financial_year") // e.g. "2024-25"
-  grossIncome         BigInt         @default(0) @map("gross_income") // paise
-  totalExpenses       BigInt         @default(0) @map("total_expenses") // paise
-  taxableIncome       BigInt         @default(0) @map("taxable_income") // paise
-  taxRegime           TaxRegime      @default(new) @map("tax_regime")
-  taxationScheme      TaxationScheme @default(presumptive_44ad) @map("taxation_scheme")
-
-  // Deductions (flattened from nested object for relational integrity)
-  deductionSection80c         BigInt @default(0) @map("deduction_section_80c")
-  deductionStandardDeduction  BigInt @default(0) @map("deduction_standard_deduction")
-  deductionFuelExpense        BigInt @default(0) @map("deduction_fuel_expense")
-  deductionVehicleDepreciation BigInt @default(0) @map("deduction_vehicle_depreciation")
-  deductionMobileExpense      BigInt @default(0) @map("deduction_mobile_expense")
-  deductionOtherBusiness      BigInt @default(0) @map("deduction_other_business")
-  deductionTotal              BigInt @default(0) @map("deduction_total")
-
-  taxPayable          BigInt         @default(0) @map("tax_payable") // paise
-  taxPaid             BigInt         @default(0) @map("tax_paid") // paise
-  refundDue           BigInt         @default(0) @map("refund_due") // paise
-  itrForm             ItrForm?       @map("itr_form")
-  cleartaxReturnId    String?        @map("cleartax_return_id")
-  filingStatus        FilingStatus   @default(draft) @map("filing_status")
-
-  createdAt           DateTime       @default(now()) @map("created_at")
-  updatedAt           DateTime       @updatedAt @map("updated_at")
-
-  user                User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, financialYear])
-  @@map("tax_records")
-}
-
-// ============================================================
-// 8. COMMUNITY JOBS
-// ============================================================
-
-model CommunityJob {
-  id              String             @id @default(uuid())
-  postedById      String             @map("posted_by")
-  type            CommunityJobType
-  title           String
-  description     String?
-
-  // Pickup location
-  pickupAddress   String?            @map("pickup_address")
-  pickupLat       Float?             @map("pickup_lat")
-  pickupLng       Float?             @map("pickup_lng")
-
-  // Dropoff location
-  dropoffAddress  String?            @map("dropoff_address")
-  dropoffLat      Float?             @map("dropoff_lat")
-  dropoffLng      Float?             @map("dropoff_lng")
-
-  offeredPrice    BigInt             @map("offered_price") // paise
-  status          CommunityJobStatus @default(open)
-  assignedToId    String?            @map("assigned_to")
-  paymentStatus   PaymentStatus      @default(pending) @map("payment_status")
-  escrowAmount    BigInt?            @map("escrow_amount") // paise
-  platformFee     Float              @default(0.05) @map("platform_fee") // 5%
-
-  // Ratings
-  customerRatingScore    Int?        @map("customer_rating_score")
-  customerRatingComment  String?     @map("customer_rating_comment")
-  workerRatingScore      Int?        @map("worker_rating_score")
-  workerRatingComment    String?     @map("worker_rating_comment")
-
-  city            String?
-  // PostGIS geometry column (managed via raw SQL migration)
-  geoLat          Float?             @map("geo_lat")
-  geoLng          Float?             @map("geo_lng")
-
-  expiresAt       DateTime?          @map("expires_at")
-  createdAt       DateTime           @default(now()) @map("created_at")
-  updatedAt       DateTime           @updatedAt @map("updated_at")
-
-  postedBy        User               @relation("JobPoster", fields: [postedById], references: [id], onDelete: Cascade)
-  assignedTo      User?              @relation("JobWorker", fields: [assignedToId], references: [id], onDelete: SetNull)
-
-  @@index([status, city])
-  @@index([postedById])
-  @@index([assignedToId])
-  @@map("community_jobs")
-}
-
-// ============================================================
-// 9. SAVINGS
-// ============================================================
-
-model Saving {
-  id                String        @id @default(uuid())
-  userId            String        @map("user_id")
-  type              SavingType
-  goalName          String?       @map("goal_name")
-  goalAmount        BigInt?       @map("goal_amount") // paise
-  currentAmount     BigInt        @default(0) @map("current_amount") // paise
-  interestEarned    BigInt        @default(0) @map("interest_earned") // paise
-  partner           SavingPartner?
-  partnerFolioId    String?       @map("partner_folio_id")
-  status            SavingStatus  @default(active)
-  autoSavePercent   Float?        @map("auto_save_percent")
-
-  createdAt         DateTime      @default(now()) @map("created_at")
-  updatedAt         DateTime      @updatedAt @map("updated_at")
-
-  user              User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  transactions      SavingTransaction[]
-
-  @@index([userId])
-  @@map("savings")
-}
-
-// Normalized from Saving.transactions[]
-model SavingTransaction {
-  id        String                @id @default(uuid())
-  savingId  String                @map("saving_id")
-  type      SavingTransactionType
-  amount    BigInt                // paise
-  date      DateTime              @default(now())
-  source    String?               // description of deposit source
-
-  saving    Saving                @relation(fields: [savingId], references: [id], onDelete: Cascade)
-
-  @@index([savingId])
-  @@map("saving_transactions")
-}
-
-// ============================================================
-// 10. NOTIFICATIONS
-// ============================================================
-
-model Notification {
-  id        String              @id @default(uuid())
-  userId    String              @map("user_id")
-  type      NotificationType
-  title     String
-  body      String
-  data      Json?               // flexible metadata
-  channels  NotificationChannel[]
-  sentAt    DateTime            @default(now()) @map("sent_at")
-  readAt    DateTime?           @map("read_at")
-
-  createdAt DateTime            @default(now()) @map("created_at")
-
-  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, readAt])
-  @@index([createdAt(sort: Desc)])
-  @@map("notifications")
-}
-
-// ============================================================
-// 11. ALGO INSIGHTS
-// ============================================================
-
-model AlgoInsight {
-  id              String      @id @default(uuid())
-  platform        Platform
-  city            String
-  insightType     InsightType @map("insight_type")
-  title           String
-  body            String
-  supportingData  Json?       @map("supporting_data")
-  upvotes         Int         @default(0)
-  reportedByCount Int         @default(0) @map("reported_by_count")
-  confidenceScore Float       @default(0) @map("confidence_score") // 0–1
-  isVerified      Boolean     @default(false) @map("is_verified")
-  validFrom       DateTime?   @map("valid_from")
-  validUntil      DateTime?   @map("valid_until")
-
-  createdAt       DateTime    @default(now()) @map("created_at")
-  updatedAt       DateTime    @updatedAt @map("updated_at")
-
-  @@index([platform, city])
-  @@index([insightType])
-  @@map("algo_insights")
-}
-
-// ============================================================
-// 12. OTP SESSIONS
-// ============================================================
-
-model OtpSession {
-  id        String     @id @default(uuid())
-  phone     String
-  otpHash   String     @map("otp_hash") // bcrypt
-  purpose   OtpPurpose
-  attempts  Int        @default(0)
-  expiresAt DateTime   @map("expires_at")
-
-  createdAt DateTime   @default(now()) @map("created_at")
-
-  @@index([phone])
-  @@index([expiresAt])
-  @@map("otp_sessions")
-}
-
-// ============================================================
-// 13. FORECAST DATA  (ML pipeline raw rows — uploaded CSV)
-// ============================================================
-
-model ForecastData {
-  id               String   @id @default(uuid())
-  userId           String   @map("user_id")
-  date             DateTime @db.Date
-  worked           Int      @default(1)
-  rainfallMm       Float    @default(0) @map("rainfall_mm")
-  tempCelsius      Float    @default(0) @map("temp_celsius")
-  averageRating    Float    @default(0) @map("average_rating")
-  incentivesEarned Float    @default(0) @map("incentives_earned")
-  netEarnings      Float    @default(0) @map("net_earnings")
-  efficiencyRatio  Float    @default(0) @map("efficiency_ratio")
-  totalEarnings    Float    @default(0) @map("total_earnings") // for graph only — NOT sent to ML model
-
-  createdAt        DateTime @default(now()) @map("created_at")
-
-  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, date])
-  @@index([userId])
-  @@map("forecast_data")
-}
-
-// ============================================================
-// FEATURE FLAGS
-// ============================================================
-
-model FeatureFlag {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  enabled   Boolean  @default(false)
-  rollout   Int      @default(0) // percentage 0-100
-
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("feature_flags")
-}
-
-// ============================================================
-// Worker Location — GPS tracking data for zone clustering
-// ============================================================
-
-model WorkerLocation {
-  id        Int      @id @default(autoincrement())
-  userId    String   @map("user_id")
-  lat       Float
-  lng       Float
-  accuracy  Float?
-  speed     Float?
-  timestamp DateTime
-  createdAt DateTime @default(now()) @map("created_at")
-
-  user      User     @relation(fields: [userId], references: [id])
-
-  @@index([userId, timestamp])
-  @@map("worker_locations")
-}
-
-// ============================================================
-// Mumbai GPS Points — synthetic seed data for DBSCAN clustering
-// ============================================================
-
-model MumbaiGpsPoint {
-  id             Int      @id @default(autoincrement())
-  lat            Float
-  lng            Float
-  avgEarnings    Float    @map("avg_earnings")
-  avgIncentives  Float    @map("avg_incentives")
-  totalOrders    Float    @map("total_orders")
-  activeWorkers  Int      @map("active_workers")
-  areaHint       String   @map("area_hint")
-  createdAt      DateTime @default(now()) @map("created_at")
-
-  @@map("mumbai_gps_points")
-}
-
-// ============================================================
-// RAW SMS — Phase 1: filtered ingestion with sync tracking
-// ============================================================
-
-model RawSms {
-  id            String    @id @default(uuid())
-  userId        String    @map("user_id")
-  sender        String                          // phone number or short code
-  body          String                          // full SMS body
-  smsTimestamp  DateTime  @map("sms_timestamp") // when the SMS was received on device
-  syncedAt      DateTime  @default(now()) @map("synced_at")
-  processedAt   DateTime? @map("processed_at")  // null = not yet processed by ML
-  syncBatchId   String    @map("sync_batch_id") // links to SyncSession
-  discardReason String?   @map("discard_reason") // why filtered out (debugging)
-  isRelevant    Boolean   @default(true) @map("is_relevant") // false if filtered
-
-  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  syncSession   SyncSession @relation(fields: [syncBatchId], references: [id])
-  transaction   Transaction?  // parsed transaction (1:1)
-
-  @@unique([userId, sender, smsTimestamp])       // dedup
-  @@index([userId, syncedAt(sort: Desc)])
-  @@index([userId, smsTimestamp(sort: Desc)])
-  @@index([processedAt])
-  @@map("raw_sms")
-}
-
-// ============================================================
-// SYNC SESSIONS — tracks each SMS sync attempt
-// ============================================================
-
-model SyncSession {
-  id                   String    @id @default(uuid())
-  userId               String    @map("user_id")
-  startedAt            DateTime  @default(now()) @map("started_at")
-  completedAt          DateTime? @map("completed_at")
-  totalScanned         Int       @default(0) @map("total_scanned")
-  newStored            Int       @default(0) @map("new_stored")
-  duplicatesSkipped    Int       @default(0) @map("duplicates_skipped")
-  irrelevantDiscarded  Int       @default(0) @map("irrelevant_discarded")
-  status               String    @default("pending") // pending | success | partial | failed
-
-  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  messages RawSms[]
-
-  @@index([userId, startedAt(sort: Desc)])
-  @@map("sync_sessions")
-}
-
-// ============================================================
-// TRANSACTIONS — Phase 2: parsed financial events from SMS
-// ============================================================
-
-model Transaction {
-  id            String    @id @default(uuid())
-  userId        String    @map("user_id")
-  rawSmsId      String    @unique @map("raw_sms_id")
-  amount        Float                           // in rupees
-  direction     String                          // "credit" | "debit"
-  category      String                          // INCOME, FOOD, FUEL, etc.
-  merchant      String?                         // extracted merchant name
-  sender        String                          // original SMS sender ID
-  smsTimestamp  DateTime  @map("sms_timestamp") // when the SMS was received
-  parsedAt      DateTime  @default(now()) @map("parsed_at")
-  confidence    Float                           // 0.0 to 1.0
-  rawBody       String    @map("raw_body")      // original SMS text
-
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rawSms        RawSms    @relation(fields: [rawSmsId], references: [id])
-
-  @@index([userId, smsTimestamp(sort: Desc)])
-  @@index([userId, category])
-  @@index([direction])
-  @@map("transactions")
+model CreditLine {
+  id                 String           @id @default(uuid())
+  userId             String           @map("user_id")
+  type               CreditLineType
+  principalAmount    Float            @map("principal_amount") // INR
+  outstandingAmount  Float            @map("outstanding_amount") // INR (Principal + convenience fee)
+  dailyRepaymentRate Float            @map("daily_repayment_rate") // Percentage
+  reason             String?          // Track reason for emergency fund
+  status             CreditLineStatus @default(ACTIVE)
+
+  createdAt          DateTime         @default(now()) @map("created_at")
+
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@map("credit_lines")
 }

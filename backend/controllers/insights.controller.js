@@ -14,7 +14,6 @@ const insightsController = {
   async algoInsights(req, res, next) {
     try {
       const where = {};
-      const where = {};
       if (req.query.platform) where.platform = req.query.platform;
       if (req.query.city) where.city = req.query.city;
       if (req.query.type) where.insightType = req.query.type;
@@ -98,7 +97,6 @@ const insightsController = {
     try {
       const user = await prisma.user.findUnique({ where: { id: req.user.id } });
       const city = user.city || 'bangalore';
-      const city = user.city || 'bangalore';
 
       // Last 30 days analytics
       const thirtyDaysAgo = new Date();
@@ -127,21 +125,17 @@ const insightsController = {
           date: { gte: thirtyDaysAgo },
         },
         _avg: { netAmount: true },
-        _avg: { netAmount: true },
       });
 
       // Count active users in city
       const cityUsers = await prisma.earning.groupBy({
         by: ['userId'],
         where: {
-          user: { city },
           user: { city: city },
           date: { gte: thirtyDaysAgo },
         },
       });
 
-      const userAvg = Number(userStats._avg.netAmount || 0);
-      const cityAvg = Number(cityStats._avg.netAmount || 0);
       const userAvg = Number(userStats._avg.netAmount || 0);
       const cityAvg = Number(cityStats._avg.netAmount || 0);
       const comparison = cityAvg > 0
@@ -154,7 +148,6 @@ const insightsController = {
           period: '30d',
           city,
           user: {
-            totalEarnings: Number(userStats._sum.netAmount || 0),
             totalEarnings: Number(userStats._sum.netAmount || 0),
             avgPerEntry: userAvg,
             totalEntries: userStats._count,

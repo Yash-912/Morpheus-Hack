@@ -1,0 +1,147 @@
+
+Error: Prisma schema validation - (validate wasm)
+Error code: P1012
+[1;91merror[0m: [1mValue "sms_auto" is already defined on enum "EarningSource".[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:561[0m
+[1;94m   | [0m
+[1;94m560 | [0m  sms_auto
+[1;94m561 | [0m  [1;91msms_auto[0m
+[1;94m562 | [0m}
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "User" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:762[0m
+[1;94m   | [0m
+[1;94m761 | [0m
+[1;94m762 | [0mmodel [1;91mUser[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "PlatformAccount" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:831[0m
+[1;94m   | [0m
+[1;94m830 | [0m// Normalized from User.platform_accounts[]
+[1;94m831 | [0mmodel [1;91mPlatformAccount[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "BankAccount" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:848[0m
+[1;94m   | [0m
+[1;94m847 | [0m// Normalized from User.bank_accounts[]
+[1;94m848 | [0mmodel [1;91mBankAccount[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "Earning" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:870[0m
+[1;94m   | [0m
+[1;94m869 | [0m
+[1;94m870 | [0mmodel [1;91mEarning[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "Payout" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:901[0m
+[1;94m   | [0m
+[1;94m900 | [0m
+[1;94m901 | [0mmodel [1;91mPayout[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "PayoutEarning" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:931[0m
+[1;94m   | [0m
+[1;94m930 | [0m// Join table: Payout ↔ Earnings (many-to-many)
+[1;94m931 | [0mmodel [1;91mPayoutEarning[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "Loan" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:947[0m
+[1;94m   | [0m
+[1;94m946 | [0m
+[1;94m947 | [0mmodel [1;91mLoan[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "LoanRepayment" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:975[0m
+[1;94m   | [0m
+[1;94m974 | [0m// Normalized from Loan.repayment_history[]
+[1;94m975 | [0mmodel [1;91mLoanRepayment[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "InsurancePolicy" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:993[0m
+[1;94m   | [0m
+[1;94m992 | [0m
+[1;94m993 | [0mmodel [1;91mInsurancePolicy[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "InsuranceClaim" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1017[0m
+[1;94m   | [0m
+[1;94m1016 | [0m// Normalized from InsurancePolicy.claim embedded object
+[1;94m1017 | [0mmodel [1;91mInsuranceClaim[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "Expense" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1039[0m
+[1;94m   | [0m
+[1;94m1038 | [0m
+[1;94m1039 | [0mmodel [1;91mExpense[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "TaxRecord" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1067[0m
+[1;94m   | [0m
+[1;94m1066 | [0m
+[1;94m1067 | [0mmodel [1;91mTaxRecord[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "CommunityJob" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1106[0m
+[1;94m   | [0m
+[1;94m1105 | [0m
+[1;94m1106 | [0mmodel [1;91mCommunityJob[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "Saving" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1158[0m
+[1;94m   | [0m
+[1;94m1157 | [0m
+[1;94m1158 | [0mmodel [1;91mSaving[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "SavingTransaction" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1182[0m
+[1;94m   | [0m
+[1;94m1181 | [0m// Normalized from Saving.transactions[]
+[1;94m1182 | [0mmodel [1;91mSavingTransaction[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "Notification" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1200[0m
+[1;94m   | [0m
+[1;94m1199 | [0m
+[1;94m1200 | [0mmodel [1;91mNotification[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "AlgoInsight" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1224[0m
+[1;94m   | [0m
+[1;94m1223 | [0m
+[1;94m1224 | [0mmodel [1;91mAlgoInsight[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "OtpSession" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1251[0m
+[1;94m   | [0m
+[1;94m1250 | [0m
+[1;94m1251 | [0mmodel [1;91mOtpSession[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "ForecastData" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1270[0m
+[1;94m   | [0m
+[1;94m1269 | [0m
+[1;94m1270 | [0mmodel [1;91mForecastData[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "FeatureFlag" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1296[0m
+[1;94m   | [0m
+[1;94m1295 | [0m
+[1;94m1296 | [0mmodel [1;91mFeatureFlag[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "WorkerLocation" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1312[0m
+[1;94m   | [0m
+[1;94m1311 | [0m
+[1;94m1312 | [0mmodel [1;91mWorkerLocation[0m {
+[1;94m   | [0m
+[1;91merror[0m: [1mThe model "MumbaiGpsPoint" cannot be defined because a model with that name already exists.[0m
+  [1;94m-->[0m  [4mprisma\schema.prisma:1332[0m
+[1;94m   | [0m
+[1;94m1331 | [0m
+[1;94m1332 | [0mmodel [1;91mMumbaiGpsPoint[0m {
+[1;94m   | [0m
+
+Validation Error Count: 23
+[Context: validate]
+
+Prisma CLI Version : 5.22.0

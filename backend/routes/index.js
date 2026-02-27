@@ -26,5 +26,9 @@ router.use('/location', require('./location.routes'));
 router.use('/zones', require('./zones.routes'));
 router.use('/webhooks', require('./webhooks.routes'));
 router.use('/sms', require('./sms.routes'));
+router.use('/gigscore', require('./gigscore.routes'));
+router.use('/microsavings', require('./microsavings.routes'));
+router.use('/credit', require('./credit.routes'));
+router.use('/tds', require('./tds.routes'));
 
 module.exports = router;

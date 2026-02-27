@@ -2,7 +2,7 @@ import { usePayouts } from '../hooks/usePayouts';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { ArrowRight, History, ArrowUpRight, ArrowDownLeft, ShieldCheck, PiggyBank, Zap, Shield } from 'lucide-react';
+import { ArrowRight, History, ArrowUpRight, ArrowDownLeft, ShieldCheck, PiggyBank, Zap, ShieldAlert, Banknote } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/ui.store';
 import { useEffect } from 'react';
@@ -69,26 +69,26 @@ const Wallet = () => {
 
             {/* Financial Services */}
             <div className="grid grid-cols-3 gap-3">
-                <div onClick={() => navigate('/loans')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
+                <div onClick={() => navigate('/loans')} className="bg-white p-3 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
                     <div className="w-10 h-10 rounded-full bg-[#FFD166]/20 text-[#FFD166] flex items-center justify-center mb-2">
                         <Zap size={20} className="fill-current" />
                     </div>
-                    <h4 className="font-bold text-gigpay-navy text-sm">Gig Loans</h4>
-                    <p className="text-xs text-gigpay-text-secondary mt-1">0% Advance</p>
+                    <h4 className="font-bold text-gigpay-navy text-xs sm:text-sm">Loans</h4>
+                    <p className="text-[10px] sm:text-xs text-gigpay-text-secondary mt-1">0% Advance</p>
                 </div>
-                <div onClick={() => navigate('/savings')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
+                <div onClick={() => navigate('/credit')} className="bg-white p-3 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
+                    <div className="w-10 h-10 rounded-full bg-red-100 text-red-500 flex items-center justify-center mb-2">
+                        <ShieldAlert size={20} />
+                    </div>
+                    <h4 className="font-bold text-gigpay-navy text-xs sm:text-sm">Emergency</h4>
+                    <p className="text-[10px] sm:text-xs text-gigpay-text-secondary mt-1">₹500-5k</p>
+                </div>
+                <div onClick={() => navigate('/savings')} className="bg-white p-3 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
                     <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-500 flex items-center justify-center mb-2">
                         <PiggyBank size={20} />
                     </div>
-                    <h4 className="font-bold text-gigpay-navy text-sm">Savings</h4>
-                    <p className="text-xs text-gigpay-text-secondary mt-1">Auto-stash</p>
-                </div>
-                <div onClick={() => navigate('/wallet/insurance')} className="bg-white p-4 rounded-xl border-2 border-gigpay-border shadow-brutal-sm flex flex-col items-center justify-center text-center cursor-pointer hover:border-gigpay-navy transition-colors">
-                    <div className="w-10 h-10 rounded-full bg-green-100 text-green-500 flex items-center justify-center mb-2">
-                        <Shield size={20} />
-                    </div>
-                    <h4 className="font-bold text-gigpay-navy text-sm">Insurance</h4>
-                    <p className="text-xs text-gigpay-text-secondary mt-1">₹1/day</p>
+                    <h4 className="font-bold text-gigpay-navy text-xs sm:text-sm">Savings</h4>
+                    <p className="text-[10px] sm:text-xs text-gigpay-text-secondary mt-1">Auto-stash</p>
                 </div>
             </div>
 

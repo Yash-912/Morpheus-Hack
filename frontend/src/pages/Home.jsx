@@ -9,7 +9,7 @@ import { Card, ActionCard } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
 import SMSPermission from '../components/expenses/SMSPermission';
-import { ArrowRight, Flame } from 'lucide-react';
+import { ArrowRight, Flame, Gauge, PiggyBank, Zap, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -68,6 +68,53 @@ const Home = () => {
             <section>
                 <h2 className="text-heading-md mb-3">Quick Actions</h2>
                 <ActionGrid />
+            </section>
+
+            {/* Financial Hub */}
+            <section>
+                <h2 className="text-heading-md mb-3">Financial Hub</h2>
+                <div className="grid grid-cols-2 gap-3">
+                    <Card
+                        onClick={() => navigate('/gigscore')}
+                        className="p-4 cursor-pointer active:translate-y-0.5 transition-all bg-gradient-to-br from-indigo-50 to-blue-50 border-indigo-200"
+                    >
+                        <div className="w-9 h-9 rounded-lg bg-indigo-100 flex items-center justify-center mb-2">
+                            <Gauge size={20} className="text-indigo-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-gigpay-navy">GigScore</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Your credit profile</p>
+                    </Card>
+                    <Card
+                        onClick={() => navigate('/microsavings')}
+                        className="p-4 cursor-pointer active:translate-y-0.5 transition-all bg-gradient-to-br from-yellow-50 to-orange-50 border-yellow-200"
+                    >
+                        <div className="w-9 h-9 rounded-lg bg-yellow-100 flex items-center justify-center mb-2">
+                            <PiggyBank size={20} className="text-yellow-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-gigpay-navy">Micro-Savings</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Gold & Target Gullak</p>
+                    </Card>
+                    <Card
+                        onClick={() => navigate('/credit')}
+                        className="p-4 cursor-pointer active:translate-y-0.5 transition-all bg-gradient-to-br from-green-50 to-emerald-50 border-green-200"
+                    >
+                        <div className="w-9 h-9 rounded-lg bg-green-100 flex items-center justify-center mb-2">
+                            <Zap size={20} className="text-green-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-gigpay-navy">Emergency Fund</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Instant cash advance</p>
+                    </Card>
+                    <Card
+                        onClick={() => navigate('/tax-hub')}
+                        className="p-4 cursor-pointer active:translate-y-0.5 transition-all bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200"
+                    >
+                        <div className="w-9 h-9 rounded-lg bg-purple-100 flex items-center justify-center mb-2">
+                            <FileText size={20} className="text-purple-600" />
+                        </div>
+                        <h3 className="text-sm font-bold text-gigpay-navy">Tax Hub</h3>
+                        <p className="text-[11px] text-gigpay-text-muted mt-0.5">Claim TDS refund</p>
+                    </Card>
+                </div>
             </section>
 
             {/* Recommended for You */}

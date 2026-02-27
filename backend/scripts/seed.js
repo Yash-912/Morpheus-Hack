@@ -14,7 +14,7 @@ const getPastDate = (daysAgo) => {
 
 // Target user phone number to seed data for 
 // (assuming standard testing phone number from onboarding)
-const TARGET_PHONE = '9876543210';
+const TARGET_PHONE = '9372394505';
 
 async function main() {
     console.log(`Starting DB Seed for user with phone: ${TARGET_PHONE}`);
@@ -28,7 +28,9 @@ async function main() {
             data: {
                 phone: TARGET_PHONE,
                 name: "Gig Worker",
-                gigScore: 720,
+                gigScore: 650,
+                onboardingTier: 3,
+                activeSavingsDeductionRate: 0,
                 city: "bangalore",
                 homeLat: 12.9716,
                 homeLng: 77.5946,
@@ -39,12 +41,13 @@ async function main() {
         });
     } else {
         console.log(`Found existing user: ${user.id}`);
-        // Ensure wallet has some funds and they are verified
         await prisma.user.update({
             where: { id: user.id },
             data: {
                 walletBalance: 1250000,
-                gigScore: Math.max(user.gigScore, 650),
+                gigScore: 650,
+                onboardingTier: 3,
+                activeSavingsDeductionRate: 25,
                 kycStatus: "verified"
             }
         });
@@ -175,7 +178,104 @@ async function main() {
         });
     }
 
-    console.log("✅ Seed completed successfully!");
+    // ══════════════════════════════════════════════════════════════
+    // 6. Seed Financial Hub Data (GigScore, Gold, Gullak, Credit)
+    // ══════════════════════════════════════════════════════════════
+    console.log("Seeding Financial Hub data...");
+
+    // Clean old Financial Hub data
+    await prisma.gigScoreHistory.deleteMany({ where: { userId: user.id } });
+    await prisma.digitalGoldHolding.deleteMany({ where: { userId: user.id } });
+    await prisma.savingsGoal.deleteMany({ where: { userId: user.id } });
+    await prisma.creditLine.deleteMany({ where: { userId: user.id } });
+
+    // 6a. GigScore History — 4 months of trending-up scores
+    console.log("  → GigScore history (4 months)...");
+    const scoreHistory = [
+        { monthsAgo: 4, consistency: 55, repayment: 60, tenure: 30, engagement: 50, discipline: 40, total: 420 },
+        { monthsAgo: 3, consistency: 65, repayment: 75, tenure: 45, engagement: 60, discipline: 55, total: 500 },
+        { monthsAgo: 2, consistency: 75, repayment: 85, tenure: 55, engagement: 70, discipline: 65, total: 580 },
+        { monthsAgo: 1, consistency: 82, repayment: 92, tenure: 65, engagement: 78, discipline: 75, total: 650 },
+    ];
+
+    for (const h of scoreHistory) {
+        const month = new Date();
+        month.setMonth(month.getMonth() - h.monthsAgo);
+        month.setDate(1);
+
+        await prisma.gigScoreHistory.create({
+            data: {
+                userId: user.id,
+                month,
+                earningsConsistencyScore: h.consistency,
+                repaymentHistoryScore: h.repayment,
+                platformTenureScore: h.tenure,
+                engagementScore: h.engagement,
+                financialDisciplineScore: h.discipline,
+                totalScore: h.total,
+            },
+        });
+    }
+
+    // 6b. Digital Gold Holding — 0.35g at avg ₹6,800/g
+    console.log("  → Digital gold (0.35g)...");
+    await prisma.digitalGoldHolding.create({
+        data: {
+            userId: user.id,
+            totalGrams: 0.35,
+            averagePurchasePrice: 6800,
+        },
+    });
+
+    // 6c. Savings Goals (Gullaks)
+    console.log("  → Savings goals (Bike Insurance 60%, Phone Repair planned)...");
+    await prisma.savingsGoal.create({
+        data: {
+            userId: user.id,
+            title: "Bike Insurance",
+            targetAmount: 4500,
+            currentAmount: 2700,
+            dailyDeductionLimit: 25,
+            isCompleted: false,
+        },
+    });
+
+    await prisma.savingsGoal.create({
+        data: {
+            userId: user.id,
+            title: "Phone Repair Fund",
+            targetAmount: 2000,
+            currentAmount: 0,
+            dailyDeductionLimit: 0,
+            isCompleted: false,
+        },
+    });
+
+    // 6d. Credit History — 2 repaid Emergency Funds (shows repayment track record)
+    console.log("  → Credit history (2 repaid emergency funds)...");
+    await prisma.creditLine.create({
+        data: {
+            userId: user.id,
+            type: 'EMERGENCY',
+            principalAmount: 500,
+            outstandingAmount: 0,
+            dailyRepaymentRate: 20,
+            status: 'REPAID',
+        },
+    });
+
+    await prisma.creditLine.create({
+        data: {
+            userId: user.id,
+            type: 'EMERGENCY',
+            principalAmount: 1000,
+            outstandingAmount: 0,
+            dailyRepaymentRate: 20,
+            status: 'REPAID',
+        },
+    });
+
+    console.log("✅ Seed completed successfully! Financial Hub data ready for demo.");
 }
 
 main()

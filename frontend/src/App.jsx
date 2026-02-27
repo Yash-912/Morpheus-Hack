@@ -36,6 +36,12 @@ import Support from './pages/Profile/Support';
 // SMS Transactions
 import SmsTransactions from './pages/SmsTransactions';
 
+// Financial Hub
+import GigScoreDashboard from './pages/GigScoreDashboard';
+import MicroSavingsHub from './pages/MicroSavingsHub';
+import CreditHub from './pages/CreditHub';
+import TaxDashboard from './pages/TaxDashboard';
+
 // Onboarding Pages
 import Landing from './pages/Onboarding/Landing';
 import PhoneEntry from './pages/Onboarding/PhoneEntry';
@@ -95,6 +101,10 @@ function App() {
                   <Route path="/profile/linked-accounts" element={<LinkedAccounts />} />
                   <Route path="/profile/support" element={<Support />} />
                   <Route path="/sms-transactions" element={<SmsTransactions />} />
+                  <Route path="/gigscore" element={<GigScoreDashboard />} />
+                  <Route path="/microsavings" element={<MicroSavingsHub />} />
+                  <Route path="/credit" element={<CreditHub />} />
+                  <Route path="/tax-hub" element={<TaxDashboard />} />
                   <Route path="/zones" element={<Zones />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>

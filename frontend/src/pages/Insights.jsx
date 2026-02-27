@@ -127,7 +127,7 @@ const Insights = () => {
 
             {/* Tax Assistant card — link to /insights/tax */}
             <Card
-                onClick={() => navigate('/insights/tax')}
+                onClick={() => navigate('/tax-hub')}
                 className="p-4 bg-gradient-to-r from-[#FFFAEB] to-[#FEF3C7] border-[#FFD166] cursor-pointer active:translate-y-0.5 active:shadow-none transition-all"
             >
                 <div className="flex items-center gap-3">
