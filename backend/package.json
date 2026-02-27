@@ -4,6 +4,7 @@
   "description": "GigPay Backend API — Financial OS for India's gig workers",
   "main": "server.js",
   "scripts": {
+    "postinstall": "prisma generate",
     "start": "node server.js",
     "dev": "nodemon server.js",
     "lint": "eslint .",

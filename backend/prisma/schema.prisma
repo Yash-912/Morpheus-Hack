@@ -50,11 +50,11 @@ model User {
   notifications           Notification[]
   payouts                 Payout[]
   platformAccounts        PlatformAccount[]
-  raw_sms                 raw_sms[]
+  rawSms                  RawSms[]
   savings                 Saving[]
-  sync_sessions           sync_sessions[]
+  syncSessions            SyncSession[]
   taxRecords              TaxRecord[]
-  transactions            transactions[]
+  transactions            Transaction[]
   workerLocations         WorkerLocation[]
   gigScoreHistory         GigScoreHistory[]
   digitalGoldHolding      DigitalGoldHolding?
@@ -474,25 +474,26 @@ model MumbaiGpsPoint {
   @@map("mumbai_gps_points")
 }
 
-model raw_sms {
-  id             String        @id
-  user_id        String
-  sender         String
-  body           String
-  sms_timestamp  DateTime
-  synced_at      DateTime      @default(now())
-  discard_reason String?
-  is_relevant    Boolean       @default(true)
-  processed_at   DateTime?
-  sync_batch_id  String
-  sync_sessions  sync_sessions @relation(fields: [sync_batch_id], references: [id])
-  users          User          @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  transactions   transactions?
+model RawSms {
+  id            String       @id @default(uuid())
+  userId        String       @map("user_id")
+  sender        String
+  body          String
+  smsTimestamp  DateTime     @map("sms_timestamp")
+  syncedAt      DateTime     @default(now()) @map("synced_at")
+  discardReason String?      @map("discard_reason")
+  isRelevant    Boolean      @default(true) @map("is_relevant")
+  processedAt   DateTime?    @map("processed_at")
+  syncBatchId   String       @map("sync_batch_id")
+  syncSession   SyncSession  @relation(fields: [syncBatchId], references: [id])
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transaction   Transaction?
 
-  @@unique([user_id, sender, sms_timestamp])
-  @@index([processed_at])
-  @@index([user_id, sms_timestamp(sort: Desc)])
-  @@index([user_id, synced_at(sort: Desc)])
+  @@unique([userId, sender, smsTimestamp])
+  @@index([processedAt])
+  @@index([userId, smsTimestamp(sort: Desc)])
+  @@index([userId, syncedAt(sort: Desc)])
+  @@map("raw_sms")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
@@ -504,41 +505,43 @@ model spatial_ref_sys {
   proj4text String? @db.VarChar(2048)
 }
 
-model sync_sessions {
-  id                   String    @id
-  user_id              String
-  started_at           DateTime  @default(now())
-  completed_at         DateTime?
-  total_scanned        Int       @default(0)
-  new_stored           Int       @default(0)
-  duplicates_skipped   Int       @default(0)
-  irrelevant_discarded Int       @default(0)
-  status               String    @default("pending")
-  raw_sms              raw_sms[]
-  users                User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+model SyncSession {
+  id                  String    @id @default(uuid())
+  userId              String    @map("user_id")
+  startedAt           DateTime  @default(now()) @map("started_at")
+  completedAt         DateTime? @map("completed_at")
+  totalScanned        Int       @default(0) @map("total_scanned")
+  newStored           Int       @default(0) @map("new_stored")
+  duplicatesSkipped   Int       @default(0) @map("duplicates_skipped")
+  irrelevantDiscarded Int       @default(0) @map("irrelevant_discarded")
+  status              String    @default("pending")
+  rawSms              RawSms[]
+  user                User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([user_id, started_at(sort: Desc)])
+  @@index([userId, startedAt(sort: Desc)])
+  @@map("sync_sessions")
 }
 
-model transactions {
-  id            String   @id
-  user_id       String
-  raw_sms_id    String   @unique
-  amount        Float
-  direction     String
-  category      String
-  merchant      String?
-  sender        String
-  sms_timestamp DateTime
-  parsed_at     DateTime @default(now())
-  confidence    Float
-  raw_body      String
-  raw_sms       raw_sms  @relation(fields: [raw_sms_id], references: [id])
-  users         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+model Transaction {
+  id           String   @id @default(uuid())
+  userId       String   @map("user_id")
+  rawSmsId     String   @unique @map("raw_sms_id")
+  amount       Float
+  direction    String
+  category     String
+  merchant     String?
+  sender       String
+  smsTimestamp DateTime @map("sms_timestamp")
+  parsedAt     DateTime @default(now()) @map("parsed_at")
+  confidence   Float
+  rawBody      String   @map("raw_body")
+  rawSms       RawSms   @relation(fields: [rawSmsId], references: [id])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([direction])
-  @@index([user_id, category])
-  @@index([user_id, sms_timestamp(sort: Desc)])
+  @@index([userId, category])
+  @@index([userId, smsTimestamp(sort: Desc)])
+  @@map("transactions")
 }
 
 enum KycStatus {

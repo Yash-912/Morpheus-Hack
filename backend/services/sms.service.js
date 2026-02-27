@@ -55,11 +55,17 @@ const SmsService = {
       .expire(OTP_STORE_KEY(phone), OTP_EXPIRY_MINUTES * 60)
       .exec();
 
-    // ---- Send via Twilio ----
+    // ---- Dev bypass: skip Twilio entirely, return OTP in response ----
+    const isDev = process.env.NODE_ENV !== 'production';
+    if (isDev) {
+      logger.warn('DEV MODE — OTP bypass active, SMS not sent', { otp, phone: phone.slice(-4) });
+      return { sent: true, otpHash, devOtp: otp };
+    }
+
+    // ---- Send via Twilio (production only) ----
     if (!twilioClient || !TWILIO_SMS_FROM) {
-      // Dev mode: log OTP
       logger.warn('Twilio not configured — OTP logged for dev', { otp, phone: phone.slice(-4) });
-      return { sent: true, otpHash };
+      return { sent: true, otpHash, devOtp: otp };
     }
 
     try {

@@ -71,7 +71,7 @@ const VoiceAssistant = () => {
             {!isOpen && (
                 <button
                     onClick={handleToggle}
-                    className="fixed bottom-24 right-4 z-50 w-14 h-14 rounded-full bg-gigpay-navy text-white shadow-brutal-sm flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+                    className="absolute bottom-24 right-4 z-50 w-14 h-14 rounded-full bg-gigpay-navy text-white shadow-brutal-sm flex items-center justify-center transition-all hover:scale-105 active:scale-95"
                     aria-label="Open voice assistant"
                     id="voice-assistant-fab"
                 >
@@ -84,7 +84,7 @@ const VoiceAssistant = () => {
 
             {/* Chat Overlay */}
             {isOpen && (
-                <div className="fixed inset-0 z-50 flex flex-col bg-white animate-fade-in">
+                <div className="absolute inset-0 z-50 flex flex-col bg-white animate-fade-in">
                     {/* Header */}
                     <div className="flex items-center justify-between px-4 py-3 bg-gigpay-navy text-white">
                         <div className="flex items-center gap-3">

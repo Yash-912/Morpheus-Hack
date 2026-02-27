@@ -14,6 +14,7 @@ const PhoneEntry = () => {
     const [step, setStep] = useState(1); // 1 = Phone, 2 = OTP
     const [phone, setPhone] = useState('');
     const [error, setError] = useState('');
+    const [devOtp, setDevOtp] = useState(null);
 
     const handleSendOtp = async (e) => {
         e.preventDefault();
@@ -23,9 +24,14 @@ const PhoneEntry = () => {
         }
         setError('');
         try {
-            await sendOtp(phone);
+            const result = await sendOtp(phone);
             setStep(2);
-            toast.success('OTP sent successfully (Simulated)');
+            if (result.devOtp) {
+                setDevOtp(result.devOtp);
+                toast.success(`DEV OTP: ${result.devOtp}`, { duration: 10000 });
+            } else {
+                toast.success('OTP sent successfully');
+            }
         } catch (err) {
             toast.error('Failed to send OTP');
         }
@@ -101,6 +107,7 @@ const PhoneEntry = () => {
                             length={6}
                             onComplete={handleVerifyOtp}
                             isLoading={isVerifyingOtp}
+                            autoFillValue={devOtp}
                         />
 
                         <div className="text-center">

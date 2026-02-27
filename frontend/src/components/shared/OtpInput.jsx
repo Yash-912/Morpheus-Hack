@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { cn } from '../ui/Button';
 
-export const OtpInput = ({ length = 4, onComplete, isLoading }) => {
+export const OtpInput = ({ length = 4, onComplete, isLoading, autoFillValue }) => {
     const [otp, setOtp] = useState(new Array(length).fill(''));
     const inputRefs = useRef([]);
 
@@ -10,6 +10,16 @@ export const OtpInput = ({ length = 4, onComplete, isLoading }) => {
             inputRefs.current[0].focus();
         }
     }, []);
+
+    // Auto-fill OTP when devOtp is provided
+    useEffect(() => {
+        if (autoFillValue && autoFillValue.length === length) {
+            const digits = autoFillValue.split('');
+            setOtp(digits);
+            // Auto-submit after a brief delay so the user sees it fill in
+            setTimeout(() => onComplete(autoFillValue), 400);
+        }
+    }, [autoFillValue]);
 
     const handleChange = (e, index) => {
         const value = e.target.value;

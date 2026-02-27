@@ -45,8 +45,14 @@ const authController = {
   async sendOtp(req, res, next) {
     try {
       const { phone } = req.body;
-      await SmsService.sendOtp(phone);
-      res.json({ success: true, message: 'OTP sent successfully' });
+      const result = await SmsService.sendOtp(phone);
+      const response = { success: true, message: 'OTP sent successfully' };
+      // DEV BYPASS: include OTP in response so frontend can auto-fill
+      if (result.devOtp) {
+        response.devOtp = result.devOtp;
+        response.message = 'OTP generated (dev mode — check response)';
+      }
+      res.json(response);
     } catch (error) {
       next(error);
     }
@@ -68,20 +74,23 @@ const authController = {
         });
       }
 
-      // Upsert user
-      let user = await prisma.user.findUnique({ where: { phone } });
-      const isNewUser = !user;
+      // Upsert user (atomic to avoid 409 race on concurrent OTP verifications)
+      const existingUser = await prisma.user.findUnique({ where: { phone } });
+      const isNewUser = !existingUser;
+
+      const user = await prisma.user.upsert({
+        where: { phone },
+        update: {},  // existing user — no changes needed
+        create: {
+          phone,
+          isActive: true,
+          kycStatus: 'pending',
+          walletBalance: BigInt(0),
+          gigScore: 0,
+        },
+      });
 
       if (isNewUser) {
-        user = await prisma.user.create({
-          data: {
-            phone,
-            isActive: true,
-            kycStatus: 'pending',
-            walletBalance: BigInt(0),
-            gigScore: 0,
-          },
-        });
         logger.info('New user created', { userId: user.id, phone: phone.slice(-4) });
       }
 
