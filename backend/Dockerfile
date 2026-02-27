@@ -1,13 +1,13 @@
 # ============================================================
 # GigPay Backend — Dockerfile
 # ============================================================
-FROM node:20-alpine
+FROM node:20-slim
 
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for native modules (sharp, bcrypt) and Prisma (openssl)
-RUN apk add --no-cache python3 make g++ openssl1.1-compat
+# Install system dependencies for native modules (sharp, bcrypt) and Prisma
+RUN apt-get update && apt-get install -y python3 make g++ openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Copy package files first (Docker layer caching)
 COPY package.json package-lock.json* ./
