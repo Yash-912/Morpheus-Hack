@@ -6,8 +6,8 @@ FROM node:20-alpine
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies for native modules (sharp, bcrypt)
-RUN apk add --no-cache python3 make g++
+# Install system dependencies for native modules (sharp, bcrypt) and Prisma (openssl)
+RUN apk add --no-cache python3 make g++ openssl1.1-compat
 
 # Copy package files first (Docker layer caching)
 COPY package.json package-lock.json* ./
