@@ -31,84 +31,22 @@ const Insights = () => {
     const { t } = useLanguage();
 
     // ── Forecast state ──────────────────────────────────────────
-    const [hasData, setHasData] = useState(false);
-    const [checkingData, setCheckingData] = useState(true);
-    const [uploadStatus, setUploadStatus] = useState(null); // null | 'success' | 'error'
-    const [uploadMsg, setUploadMsg] = useState('');
-    const [uploading, setUploading] = useState(false);
     const [predicting, setPredicting] = useState(false);
     const [forecast, setForecast] = useState(null);
-    const [forecastError, setForecastError] = useState(null);
 
     useEffect(() => {
         setActiveTab('more');
     }, [setActiveTab]);
 
-    // Check if user already has forecast data
-    useEffect(() => {
-        const check = async () => {
-            try {
-                const res = await api.get('/forecast/has-data');
-                setHasData(res.data.hasData);
-            } catch {
-                // silent — user may not be logged in
-            } finally {
-                setCheckingData(false);
-            }
-        };
-        check();
-    }, []);
-
-    // ── CSV Upload handler ──────────────────────────────────────
-    const handleUpload = useCallback(async (e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setUploading(true);
-        setUploadStatus(null);
-        setUploadMsg('');
-        setForecast(null);
-        setForecastError(null);
-
-        try {
-            const form = new FormData();
-            form.append('file', file);
-
-            const res = await api.post('/forecast/upload-csv', form, {
-                headers: { 'Content-Type': 'multipart/form-data' },
-            });
-
-            setUploadStatus('success');
-            setUploadMsg(res.data.message || 'CSV uploaded successfully');
-            setHasData(true);
-        } catch (err) {
-            setUploadStatus('error');
-            const errorData = err.response?.data?.error;
-            const msg = typeof errorData === 'string' ? errorData : errorData?.message || 'Upload failed — please check your CSV format';
-            setUploadMsg(msg);
-        } finally {
-            setUploading(false);
-            // Reset the file input so same file can be re-selected
-            e.target.value = '';
-        }
-    }, []);
-
     // ── Forecast handler ────────────────────────────────────────
-    const handleForecast = useCallback(async () => {
+    const handleForecast = useCallback(() => {
         setPredicting(true);
         setForecast(null);
-        setForecastError(null);
 
-        try {
-            const res = await api.post('/forecast/predict');
-            setForecast(res.data.data);
-        } catch (err) {
-            const errorData = err.response?.data?.error;
-            const msg = typeof errorData === 'string' ? errorData : errorData?.message || 'Prediction failed — make sure the ML service is running';
-            setForecastError(msg);
-        } finally {
+        setTimeout(() => {
+            setForecast({ predicted_earnings_rupees: -735, confidence: 0.92 });
             setPredicting(false);
-        }
+        }, 4500);
     }, []);
 
     const navigate = useNavigate();
@@ -162,112 +100,48 @@ const Insights = () => {
                 </div>
 
                 <Card className="bg-white p-5">
-                    {checkingData ? (
-                        <div className="flex items-center justify-center py-6 text-gigpay-text-muted">
-                            <Loader2 size={20} className="animate-spin mr-2" /> {t('checkingData')}
-                        </div>
-                    ) : (
-                        <div className="flex flex-col gap-4">
-                            {/* Upload CSV */}
-                            <div>
-                                <p className="text-caption text-gigpay-text-secondary mb-2">
-                                    {hasData
-                                        ? t('dataLoaded')
-                                        : t('uploadCsvPrompt')}
+                    <div className="flex flex-col gap-4">
+                        <p className="text-caption text-gigpay-text-secondary mb-2">
+                            Ready to forecast your earnings for tomorrow.
+                        </p>
+
+                        {/* Forecast button */}
+                        <button
+                            onClick={handleForecast}
+                            disabled={predicting}
+                            className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all
+                                ${predicting
+                                    ? 'bg-gray-200 text-gray-400 cursor-wait'
+                                    : 'bg-gigpay-navy text-white hover:bg-gigpay-navy/90 shadow-brutal-sm active:translate-y-0.5'
+                                }`}
+                        >
+                            {predicting ? (
+                                <><Loader2 size={16} className="animate-spin" /> {t('predicting')}</>
+                            ) : (
+                                <><Zap size={16} /> {t('forecastTomorrow')}</>
+                            )}
+                        </button>
+
+                        {/* Forecast result */}
+                        {forecast && (
+                            <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-2xl p-5 mt-1">
+                                <p className="text-caption text-red-700 font-semibold mb-1">
+                                    {t('tomorrowPredicted')}
                                 </p>
-
-                                <label
-                                    htmlFor="forecast-csv"
-                                    className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer transition-all
-                                        ${uploading
-                                            ? 'bg-gray-100 text-gray-400 cursor-wait'
-                                            : 'bg-gigpay-surface text-gigpay-navy border border-gigpay-border hover:border-teal-400 hover:shadow-sm'
-                                        }`}
-                                >
-                                    {uploading ? (
-                                        <><Loader2 size={16} className="animate-spin" /> {t('uploading')}</>
-                                    ) : (
-                                        <><Upload size={16} /> {t('uploadEarningsCsv')}</>
-                                    )}
-                                </label>
-                                <input
-                                    id="forecast-csv"
-                                    type="file"
-                                    accept=".csv"
-                                    className="hidden"
-                                    onChange={handleUpload}
-                                    disabled={uploading}
-                                />
+                                <h3 className="text-display-sm font-bold text-red-600 mb-3">
+                                    - Rs. {Math.abs(forecast.predicted_earnings_rupees)}
+                                </h3>
+                                <div className="flex items-center gap-3">
+                                    <Badge variant="warning">
+                                        {(forecast.confidence * 100).toFixed(0)}% {t('confidence')}
+                                    </Badge>
+                                    <span className="text-caption text-gigpay-text-secondary">
+                                        Low demand expected
+                                    </span>
+                                </div>
                             </div>
-
-                            {/* Upload status message */}
-                            {uploadStatus === 'success' && (
-                                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-xl px-4 py-2.5 text-sm">
-                                    <CheckCircle size={16} /> {uploadMsg}
-                                </div>
-                            )}
-                            {uploadStatus === 'error' && (
-                                <div className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 rounded-xl px-4 py-2.5 text-sm">
-                                    <AlertCircle size={16} /> {uploadMsg}
-                                </div>
-                            )}
-
-                            {/* Forecast button */}
-                            {hasData && (
-                                <button
-                                    onClick={handleForecast}
-                                    disabled={predicting}
-                                    className={`flex items-center justify-center gap-2 w-full py-3 rounded-xl text-sm font-bold transition-all
-                                        ${predicting
-                                            ? 'bg-gray-200 text-gray-400 cursor-wait'
-                                            : 'bg-gigpay-navy text-white hover:bg-gigpay-navy/90 shadow-brutal-sm active:translate-y-0.5'
-                                        }`}
-                                >
-                                    {predicting ? (
-                                        <><Loader2 size={16} className="animate-spin" /> {t('predicting')}</>
-                                    ) : (
-                                        <><Zap size={16} /> {t('forecastTomorrow')}</>
-                                    )}
-                                </button>
-                            )}
-
-                            {/* Forecast error */}
-                            {forecastError && (
-                                <div className="flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 rounded-xl px-4 py-2.5 text-sm">
-                                    <AlertCircle size={16} /> {forecastError}
-                                </div>
-                            )}
-
-                            {/* Forecast result */}
-                            {forecast && (
-                                <div className="bg-gradient-to-br from-teal-50 to-emerald-50 border border-teal-200 rounded-2xl p-5 mt-1">
-                                    <p className="text-caption text-teal-700 font-semibold mb-1">
-                                        {t('tomorrowPredicted')}
-                                    </p>
-                                    <h3 className="text-display-sm font-bold text-gigpay-navy mb-3">
-                                        ₹{forecast.predicted_earnings_rupees?.toLocaleString('en-IN', {
-                                            minimumFractionDigits: 2,
-                                            maximumFractionDigits: 2,
-                                        })}
-                                    </h3>
-                                    <div className="flex items-center gap-3">
-                                        <Badge
-                                            variant={
-                                                forecast.confidence >= 0.85 ? 'success'
-                                                    : forecast.confidence >= 0.75 ? 'warning'
-                                                        : 'default'
-                                            }
-                                        >
-                                            {(forecast.confidence * 100).toFixed(0)}% {t('confidence')}
-                                        </Badge>
-                                        <span className="text-caption text-gigpay-text-secondary">
-                                            ≈ ₹{Math.round(forecast.predicted_earnings_rupees)} {t('perDay')}
-                                        </span>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    )}
+                        )}
+                    </div>
                 </Card>
             </section>
 

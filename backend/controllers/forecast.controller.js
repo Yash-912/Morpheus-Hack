@@ -212,7 +212,10 @@ const forecastController = {
                 });
             }
 
-            next(error);
+            return res.status(503).json({
+                success: false,
+                error: `ML Service Offline: Could not connect to the local Python ML service at ${ML_SERVICE_URL}. Ensure uvicorn is running.`
+            });
         }
     },
 };

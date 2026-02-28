@@ -135,7 +135,23 @@ router.get('/financial', async (req, res, next) => {
     if (error.response) {
       return res.json({ success: true, data: error.response.data });
     }
-    next(error);
+
+    // ML Service is offline / unreachable
+    return res.json({
+      success: true,
+      data: {
+        user_id: req.user.id,
+        is_seeded: true,
+        insights: [
+          {
+            type: "advice",
+            title: "ML Service Disconnected",
+            body: `The Python ML service could not be reached at ${ML_SERVICE_URL}. The AI backend is offline.`,
+            action: "CD into the ml-service folder and run: uvicorn main:app --port 8000"
+          }
+        ]
+      }
+    });
   }
 });
 
