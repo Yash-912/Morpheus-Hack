@@ -27,9 +27,9 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/insights", tags=["insights"])
 
 # ── LLM config ──────────────────────────────────────────────────
-INSIGHTS_MODEL_API_KEY = os.getenv("INSIGHTS_MODEL_API_KEY", "")
+INSIGHTS_MODEL_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 INSIGHTS_MODEL_NAME = os.getenv(
-    "INSIGHTS_MODEL_NAME",
+    "OPENROUTER_MODEL_NAME",
     "meta-llama/llama-3.2-3b-instruct:free",
 )
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
