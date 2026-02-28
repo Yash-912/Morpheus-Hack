@@ -243,7 +243,11 @@ const Zones = () => {
                             defaultCenter={DEFAULT_CENTER}
                             center={isTracking && location ? mapCenter : undefined}
                             mapId="gigpay_zones_map"
-                            disableDefaultUI={true}
+                            gestureHandling="greedy"
+                            zoomControl={true}
+                            fullscreenControl={false}
+                            streetViewControl={false}
+                            mapTypeControl={false}
                         >
                             {/* Cluster circles */}
                             {clusters.map(c => (

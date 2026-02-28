@@ -1,204 +1,206 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../../store/ui.store';
-import InsightsFeed from '../../components/community/InsightsFeed';
-import EmptyState from '../../components/shared/EmptyState';
-import { ArrowLeft, Plus } from 'lucide-react';
-import { getPlatform, getAllPlatformIds } from '../../constants/platforms';
+import { ArrowLeft, TrendingUp, TrendingDown, Wallet, Fuel, Coffee, Calendar, Zap } from 'lucide-react';
+import { formatCurrency } from '../../utils/formatCurrency';
+import api from '../../services/api.service';
+
+const CATEGORY_META = {
+    fuel: { icon: '⛽', label: 'Fuel', color: '#F59E0B' },
+    food: { icon: '🍔', label: 'Food', color: '#EF4444' },
+    vehicle_maintenance: { icon: '🔧', label: 'Vehicle', color: '#6366F1' },
+    phone_recharge: { icon: '📱', label: 'Phone', color: '#3B82F6' },
+    toll: { icon: '🛣️', label: 'Toll', color: '#8B5CF6' },
+    other: { icon: '📦', label: 'Other', color: '#6B7280' },
+};
+
+const PLATFORM_COLORS = {
+    swiggy: '#FC8019',
+    zomato: '#E23744',
+    ola: '#8CC63F',
+    uber: '#000000',
+    other: '#6B7280',
+};
 
 const AlgoInsights = () => {
     const navigate = useNavigate();
     const setActiveTab = useUIStore((s) => s.setActiveTab);
-    const [platformFilter, setPlatformFilter] = useState('all');
-    const [showReportForm, setShowReportForm] = useState(false);
-    const [reportPattern, setReportPattern] = useState('');
-    const [reportPlatform, setReportPlatform] = useState('');
-    const [reportCity, setReportCity] = useState('');
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
-    useEffect(() => { setActiveTab('insights'); }, [setActiveTab]);
+    useEffect(() => {
+        setActiveTab('insights');
+        fetchSummary();
+    }, [setActiveTab]);
 
-    // Demo insights — replace with useQuery when wired
-    const [insights] = useState([
-        {
-            id: '1',
-            type: 'surge',
-            title: 'Lunch surge starting 15 mins early',
-            description: 'Zomato algorithms are now triggering lunch surge at 11:45 AM instead of 12 PM in HSR Layout.',
-            platform: 'Zomato',
-            city: 'Bengaluru',
-            upvotes: 47,
-            validUntil: new Date(Date.now() + 3600000).toISOString(),
-            createdAt: new Date(Date.now() - 7200000).toISOString(),
-        },
-        {
-            id: '2',
-            type: 'incentive',
-            title: 'Weekend bonus boost detected',
-            description: 'Swiggy offering ₹50 extra per order after 8 PM on Saturdays in Koramangala area.',
-            platform: 'Swiggy',
-            city: 'Bengaluru',
-            upvotes: 32,
-            createdAt: new Date(Date.now() - 14400000).toISOString(),
-        },
-        {
-            id: '3',
-            type: 'algorithm_change',
-            title: 'Ola changed dispatch radius',
-            description: 'Dispatch radius reduced from 5 km to 3 km in Electronic City. Shorter trips but quicker pickups.',
-            platform: 'Ola',
-            city: 'Bengaluru',
-            upvotes: 18,
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-        },
-        {
-            id: '4',
-            type: 'hot_zone',
-            title: 'Airport zone demand spike',
-            description: 'High demand at KIA between 6-9 PM due to flight delays. Uber surge up to 2.5x.',
-            platform: 'Uber',
-            city: 'Bengaluru',
-            upvotes: 63,
-            validUntil: new Date(Date.now() + 7200000).toISOString(),
-            createdAt: new Date(Date.now() - 3600000).toISOString(),
-        },
-    ]);
-
-    const platforms = getAllPlatformIds();
-    const filtered = platformFilter === 'all'
-        ? insights
-        : insights.filter((i) => i.platform.toLowerCase() === platformFilter);
-
-    const handleUpvote = (id) => {
-        // TODO: Call insights.api.upvote(id)
-        console.log('Upvote:', id);
+    const fetchSummary = async () => {
+        try {
+            const res = await api.get('/insights/weekly-summary');
+            setData(res.data?.data || null);
+        } catch (err) {
+            console.error('Failed to fetch insights:', err);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const handleReport = (id) => {
-        console.log('Report:', id);
-    };
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="w-8 h-8 border-3 border-gigpay-navy border-t-transparent rounded-full animate-spin" />
+            </div>
+        );
+    }
 
-    const handleSubmitPattern = (e) => {
-        e.preventDefault();
-        // TODO: Call insights.api.reportPattern()
-        console.log('Submit pattern:', { reportPattern, reportPlatform, reportCity });
-        setShowReportForm(false);
-        setReportPattern('');
-        setReportPlatform('');
-        setReportCity('');
-    };
+    if (!data || data.totalEarned === 0) {
+        return (
+            <div className="flex flex-col gap-4 animate-fade-in">
+                <div className="flex items-center gap-3">
+                    <button onClick={() => navigate(-1)} className="btn-icon"><ArrowLeft size={20} /></button>
+                    <h1 className="text-heading-lg flex-1">AI Insights</h1>
+                </div>
+                <div className="card text-center py-10">
+                    <p className="text-4xl mb-3">📊</p>
+                    <h3 className="text-heading-md font-bold text-gigpay-navy mb-2">No data yet</h3>
+                    <p className="text-body-md text-gigpay-text-secondary">Start earning to see your weekly insights here!</p>
+                </div>
+            </div>
+        );
+    }
+
+    const isUp = data.weekChange >= 0;
 
     return (
-        <div className="flex flex-col gap-4 animate-fade-in">
+        <div className="flex flex-col gap-4 animate-fade-in pb-6">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <button onClick={() => navigate(-1)} className="btn-icon">
+                <button onClick={() => navigate(-1)} className="p-2 rounded-xl hover:bg-gray-100 transition-colors">
                     <ArrowLeft size={20} />
                 </button>
-                <h1 className="text-heading-lg flex-1">Algo Insights</h1>
-                <button
-                    onClick={() => setShowReportForm(!showReportForm)}
-                    className="btn-icon bg-[#C8F135] border-gigpay-navy"
-                >
-                    <Plus size={18} />
-                </button>
+                <h1 className="text-heading-lg font-syne font-bold text-gigpay-navy flex-1">AI Insights</h1>
             </div>
 
-            {/* Platform filter */}
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-4 px-4 scrollbar-hide">
-                <button
-                    onClick={() => setPlatformFilter('all')}
-                    className={`flex-shrink-0 px-4 py-2 rounded-full text-body-md font-semibold border-[1.5px] transition-all duration-75 ${platformFilter === 'all'
-                            ? 'bg-gigpay-navy text-white border-gigpay-navy'
-                            : 'bg-white border-gigpay-border text-gigpay-text-secondary'
-                        }`}
-                >
-                    All Platforms
-                </button>
-                {platforms.map((id) => {
-                    const p = getPlatform(id);
-                    return (
-                        <button
-                            key={id}
-                            onClick={() => setPlatformFilter(id)}
-                            className={`flex-shrink-0 px-4 py-2 rounded-full text-body-md font-semibold border-[1.5px] transition-all duration-75 flex items-center gap-1.5 ${platformFilter === id
-                                    ? 'text-white border-transparent'
-                                    : 'bg-white border-gigpay-border text-gigpay-text-secondary'
-                                }`}
-                            style={platformFilter === id ? { backgroundColor: p.color } : {}}
-                        >
-                            <span>{p.icon}</span> {p.name}
-                        </button>
-                    );
-                })}
+            {/* Headline Banner */}
+            <div className="card bg-gradient-to-br from-[#0D1B3E] to-[#1a2d5a] text-white">
+                <div className="flex items-start gap-3">
+                    <div className="w-10 h-10 rounded-full bg-[#C8F135] flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Zap size={20} className="text-gigpay-navy" />
+                    </div>
+                    <div>
+                        <p className="text-label text-white/50 mb-1">Weekly Summary</p>
+                        <p className="text-body-md font-medium leading-relaxed">{data.headline}</p>
+                    </div>
+                </div>
             </div>
 
-            {/* Report pattern form */}
-            {showReportForm && (
-                <form onSubmit={handleSubmitPattern} className="card border-[#C8F135] shadow-[4px_4px_0px_#C8F135] animate-fade-in">
-                    <h3 className="text-heading-md mb-3">🔍 Report a Pattern</h3>
-                    <p className="text-caption text-gigpay-text-secondary mb-3">
-                        Spotted an algorithm change? Share it with the community!
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 gap-3">
+                <div className="card">
+                    <p className="text-caption text-gigpay-text-muted mb-1">Total Earned</p>
+                    <p className="text-heading-md font-bold text-gigpay-navy">{formatCurrency(data.totalEarned)}</p>
+                    <div className={`flex items-center gap-1 mt-1 text-caption font-semibold ${isUp ? 'text-green-600' : 'text-red-500'}`}>
+                        {isUp ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                        <span>{Math.abs(data.weekChange)}% vs last week</span>
+                    </div>
+                </div>
+                <div className="card">
+                    <p className="text-caption text-gigpay-text-muted mb-1">Total Spent</p>
+                    <p className="text-heading-md font-bold text-red-500">{formatCurrency(data.totalExpenses)}</p>
+                    <p className="text-caption text-gigpay-text-muted mt-1">
+                        Net: <span className="font-semibold text-green-600">{formatCurrency(data.netIncome)}</span>
                     </p>
+                </div>
+                <div className="card">
+                    <p className="text-caption text-gigpay-text-muted mb-1">Working Days</p>
+                    <p className="text-heading-md font-bold text-gigpay-navy">{data.workingDays} <span className="text-caption font-normal">/ 7</span></p>
+                </div>
+                <div className="card">
+                    <p className="text-caption text-gigpay-text-muted mb-1">Daily Avg</p>
+                    <p className="text-heading-md font-bold text-gigpay-navy">{formatCurrency(data.dailyAvg)}</p>
+                </div>
+            </div>
 
-                    <div className="mb-3">
-                        <input
-                            type="text"
-                            value={reportPattern}
-                            onChange={(e) => setReportPattern(e.target.value)}
-                            placeholder="What pattern did you notice?"
-                            className="input"
-                            required
-                        />
+            {/* Best & Worst Day */}
+            {data.bestDay && data.worstDay && (
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="card border-l-4 border-green-500">
+                        <p className="text-caption text-gigpay-text-muted mb-1">🏆 Best Day</p>
+                        <p className="text-body-md font-bold text-gigpay-navy">{data.bestDay.day}</p>
+                        <p className="text-caption font-semibold text-green-600">{formatCurrency(data.bestDay.amount)}</p>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3 mb-3">
-                        <select
-                            value={reportPlatform}
-                            onChange={(e) => setReportPlatform(e.target.value)}
-                            className="input"
-                            required
-                        >
-                            <option value="">Platform</option>
-                            {platforms.map((id) => (
-                                <option key={id} value={id}>{getPlatform(id).name}</option>
-                            ))}
-                        </select>
-                        <input
-                            type="text"
-                            value={reportCity}
-                            onChange={(e) => setReportCity(e.target.value)}
-                            placeholder="City"
-                            className="input"
-                            required
-                        />
+                    <div className="card border-l-4 border-orange-400">
+                        <p className="text-caption text-gigpay-text-muted mb-1">📉 Slowest Day</p>
+                        <p className="text-body-md font-bold text-gigpay-navy">{data.worstDay.day}</p>
+                        <p className="text-caption font-semibold text-orange-500">{formatCurrency(data.worstDay.amount)}</p>
                     </div>
-
-                    <div className="flex gap-2">
-                        <button type="button" onClick={() => setShowReportForm(false)} className="btn-secondary flex-1">
-                            Cancel
-                        </button>
-                        <button type="submit" className="btn-primary flex-1">
-                            Share Pattern
-                        </button>
-                    </div>
-                </form>
+                </div>
             )}
 
-            {/* Insights feed */}
-            {filtered.length > 0 ? (
-                <InsightsFeed
-                    insights={filtered}
-                    onUpvote={handleUpvote}
-                    onReport={handleReport}
-                />
-            ) : (
-                <EmptyState
-                    icon="🤖"
-                    title="No insights yet"
-                    description={`No algorithm insights for ${platformFilter === 'all' ? 'any platform' : getPlatform(platformFilter).name} right now.`}
-                    actionLabel="Report Pattern"
-                    onAction={() => setShowReportForm(true)}
-                />
+            {/* Platform Split */}
+            {data.platformSplit.length > 0 && (
+                <div className="card">
+                    <p className="text-label text-gigpay-text-secondary mb-3">📊 Earnings by Platform</p>
+                    {/* Bar visualization */}
+                    <div className="flex h-4 rounded-full overflow-hidden mb-3">
+                        {data.platformSplit.map(p => (
+                            <div
+                                key={p.platform}
+                                style={{
+                                    width: `${p.percent}%`,
+                                    backgroundColor: PLATFORM_COLORS[p.platform] || '#6B7280'
+                                }}
+                                className="transition-all duration-300"
+                            />
+                        ))}
+                    </div>
+                    <div className="flex flex-col gap-2">
+                        {data.platformSplit.map(p => (
+                            <div key={p.platform} className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <div
+                                        className="w-3 h-3 rounded-full"
+                                        style={{ backgroundColor: PLATFORM_COLORS[p.platform] || '#6B7280' }}
+                                    />
+                                    <span className="text-body-md capitalize font-medium">{p.platform}</span>
+                                </div>
+                                <div className="text-right">
+                                    <span className="text-body-md font-bold">{formatCurrency(p.amount)}</span>
+                                    <span className="text-caption text-gigpay-text-muted ml-1.5">({p.percent}%)</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Expense Breakdown */}
+            {data.expenseBreakdown.length > 0 && (
+                <div className="card">
+                    <p className="text-label text-gigpay-text-secondary mb-3">💸 Expenses by Category</p>
+                    <div className="flex flex-col gap-2.5">
+                        {data.expenseBreakdown.map(exp => {
+                            const meta = CATEGORY_META[exp.category] || CATEGORY_META.other;
+                            const pct = data.totalExpenses > 0 ? Math.round((exp.amount / data.totalExpenses) * 100) : 0;
+                            return (
+                                <div key={exp.category} className="flex items-center gap-3">
+                                    <span className="text-lg w-6 text-center">{meta.icon}</span>
+                                    <div className="flex-1">
+                                        <div className="flex justify-between mb-1">
+                                            <span className="text-body-md font-medium">{meta.label}</span>
+                                            <span className="text-body-md font-bold">{formatCurrency(exp.amount)}</span>
+                                        </div>
+                                        <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full rounded-full transition-all duration-500"
+                                                style={{ width: `${pct}%`, backgroundColor: meta.color }}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
             )}
         </div>
     );
