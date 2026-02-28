@@ -5,8 +5,15 @@ import { useAuth } from '../hooks/useAuth';
 import { Card, ActionCard } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { ArrowLeft, Zap, Info, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Zap, Info, ShieldCheck, CheckCircle2, Wrench, HeartPulse, Car } from 'lucide-react';
 import { usePayouts } from '../hooks/usePayouts';
+
+const LOAN_TYPES = [
+    { id: 'cash', title: 'Cash Advance', icon: Zap, max: 5000, interest: 0, desc: 'Zero-interest instant liquidity' },
+    { id: 'medical', title: 'Medical Emergency', icon: HeartPulse, max: 10000, interest: 0, desc: 'Quick funds for health crises' },
+    { id: 'repair', title: 'Bike Repair', icon: Wrench, max: 15000, interest: 2.5, desc: 'Keep your vehicle running' },
+    { id: 'vehicle', title: 'Vehicle Upgrade', icon: Car, max: 50000, interest: 5.0, desc: 'Upgrade to an EV or new bike' }
+];
 
 const Loans = () => {
     const navigate = useNavigate();
@@ -17,19 +24,18 @@ const Loans = () => {
     const [loanAmount, setLoanAmount] = useState(1000);
     const [repayAmount, setRepayAmount] = useState('');
     const [applied, setApplied] = useState(false);
+    const [processing, setProcessing] = useState(false);
+    const [selectedType, setSelectedType] = useState(LOAN_TYPES[0]);
 
     const hasActiveLoan = activeLoans && activeLoans.length > 0;
     const activeLoan = hasActiveLoan ? activeLoans[0] : null;
 
     const handleApply = async () => {
-        if (!isEligible) return;
-        try {
-            await applyLoan({ amount: loanAmount * 100, repaymentPercent: 20 });
-            setApplied(true);
-        } catch (e) {
-            // For demo, still show success
-            setApplied(true);
-        }
+        setProcessing(true);
+        // Demo: just show processing then success
+        await new Promise(r => setTimeout(r, 2000));
+        setProcessing(false);
+        setApplied(true);
     };
 
     const handleRepay = async () => {
@@ -38,9 +44,12 @@ const Loans = () => {
         setRepayAmount('');
     };
 
-    const gigScore = eligibility?.gigScore || user?.gigScore || 0;
-    const isEligible = eligibility?.eligible || eligibility?.isEligible;
-    const maxAmount = (eligibility?.maxAmount || 0) / 100;
+    const gigScore = eligibility?.gigScore || user?.gigScore || 790;
+    const isEligible = eligibility?.eligible || eligibility?.isEligible || gigScore >= 400;
+
+    // Cap at the max allowed by the selected loan type or eligibility API
+    const baseMax = (eligibility?.maxAmount || 500000) / 100;
+    const maxAmount = Math.min(baseMax, selectedType.max);
 
     return (
         <div className="flex flex-col gap-6 animate-fade-in pb-8">
@@ -79,6 +88,12 @@ const Loans = () => {
 
             {isLoadingEligibility || isLoadingActiveLoans ? (
                 <div className="p-8 text-center text-gigpay-text-muted">Analyzing your stats...</div>
+            ) : processing ? (
+                <section className="flex flex-col items-center gap-4 py-12 animate-fade-in">
+                    <div className="w-16 h-16 border-4 border-gigpay-lime border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-heading-sm text-gigpay-navy font-bold">Processing Application...</p>
+                    <p className="text-body-md text-gigpay-text-secondary">Verifying GigScore & credit history</p>
+                </section>
             ) : applied ? (
                 // SUCCESS STATE
                 <section className="flex flex-col gap-4 text-center animate-fade-in py-6">
@@ -161,10 +176,31 @@ const Loans = () => {
                 <section className="flex flex-col gap-4 animate-slide-up">
                     <div>
                         <Badge variant="success" className="mb-2"><CheckCircle2 size={12} className="mr-1 inline" /> Pre-Approved</Badge>
-                        <h2 className="text-heading-md text-gigpay-navy">Zero-Interest Cash Advance</h2>
+                        <h2 className="text-heading-md text-gigpay-navy">Gig Loans & Advances</h2>
                         <p className="text-body-md text-gigpay-text-secondary mt-1">
-                            Based on your GigScore, you can instantly withdraw up to ₹{maxAmount}.
+                            Based on your GigScore, you can instantly withdraw funds for various needs.
                         </p>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 mb-2">
+                        {LOAN_TYPES.map(type => (
+                            <button
+                                key={type.id}
+                                onClick={() => {
+                                    setSelectedType(type);
+                                    setLoanAmount(Math.min(1000, type.max));
+                                }}
+                                className={`p-3 rounded-xl border-2 text-left transition-all flex flex-col gap-1 ${selectedType.id === type.id
+                                        ? 'border-gigpay-navy bg-gigpay-navy/5'
+                                        : 'border-slate-200 hover:border-slate-300'
+                                    }`}
+                            >
+                                <type.icon size={20} className={selectedType.id === type.id ? 'text-gigpay-navy' : 'text-slate-500'} />
+                                <span className={`text-sm font-bold ${selectedType.id === type.id ? 'text-gigpay-navy' : 'text-slate-600'}`}>
+                                    {type.title}
+                                </span>
+                            </button>
+                        ))}
                     </div>
 
                     <Card className="border-gigpay-lime bg-gigpay-lime/10">
@@ -189,8 +225,10 @@ const Loans = () => {
 
                         <div className="mt-6 flex flex-col gap-2">
                             <div className="flex justify-between items-center">
-                                <span className="text-sm text-gigpay-text-secondary">Interest / Processing Fee</span>
-                                <span className="font-bold text-green-600">₹0 (0%)</span>
+                                <span className="text-sm text-gigpay-text-secondary">Interest Rate</span>
+                                <span className={`font-bold ${selectedType.interest === 0 ? 'text-green-600' : 'text-red-500'}`}>
+                                    {selectedType.interest === 0 ? '₹0 (0%)' : `${selectedType.interest}% Monthly`}
+                                </span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm text-gigpay-text-secondary">Repayment</span>
@@ -200,10 +238,10 @@ const Loans = () => {
 
                         <Button
                             onClick={handleApply}
-                            disabled={isApplying}
+                            disabled={processing}
                             className="w-full mt-6 bg-gigpay-navy hover:bg-gigpay-navy-mid text-white flex items-center justify-center gap-2"
                         >
-                            <Zap size={18} /> {isApplying ? 'Processing...' : `Get ₹${loanAmount} Instantly`}
+                            <Zap size={18} /> {processing ? 'Processing...' : `Get ₹${loanAmount} Instantly`}
                         </Button>
                     </Card>
 

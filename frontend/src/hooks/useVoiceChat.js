@@ -34,11 +34,16 @@ export const useVoiceChat = () => {
                 },
             });
 
-            const mediaRecorder = new MediaRecorder(stream, {
-                mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
-                    ? 'audio/webm;codecs=opus'
-                    : 'audio/webm',
-            });
+            let options = {};
+            if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+                options = { mimeType: 'audio/webm;codecs=opus' };
+            } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+                options = { mimeType: 'audio/webm' };
+            } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+                options = { mimeType: 'audio/mp4' };
+            }
+
+            const mediaRecorder = new MediaRecorder(stream, options);
 
             audioChunksRef.current = [];
             mediaRecorderRef.current = mediaRecorder;
@@ -61,7 +66,7 @@ export const useVoiceChat = () => {
             setStatus('listening');
         } catch (err) {
             console.error('Mic access denied:', err);
-            setError('Microphone access is required for voice chat.');
+            setError(`Mic Error: ${err.message || 'Access Denied'}`);
             setStatus('error');
         }
     }, []);
