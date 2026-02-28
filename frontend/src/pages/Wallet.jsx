@@ -2,7 +2,7 @@ import { usePayouts } from '../hooks/usePayouts';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { ArrowRight, History, ArrowUpRight, ArrowDownLeft, Shield, ShieldCheck, PiggyBank, Zap, ShieldAlert, Banknote } from 'lucide-react';
+import { ArrowRight, History, ArrowUpRight, ArrowDownLeft, Shield, ShieldCheck, PiggyBank, Zap, ShieldAlert, Banknote, TrendingUp } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUIStore } from '../store/ui.store';
 import { useEffect, useState } from 'react';
@@ -98,12 +98,19 @@ const Wallet = () => {
 
             </div>
 
-            {/* Escrow/Safety Notice */}
-            <div className="flex items-center gap-3 bg-gigpay-lime-soft p-4 rounded-xl border border-gigpay-lime">
-                <ShieldCheck size={24} className="text-gigpay-navy shrink-0" />
-                <p className="text-body-sm text-gigpay-navy">
-                    {t('escrowNotice')}
-                </p>
+            {/* Financial Health Motivator */}
+            <div className="flex items-start gap-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-xl border border-blue-100 shadow-sm cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/gigscore')}>
+                <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 mt-0.5">
+                    <TrendingUp size={20} />
+                </div>
+                <div>
+                    <h4 className="text-body-md font-bold text-gigpay-navy mb-1">
+                        You're doing great! 🚀
+                    </h4>
+                    <p className="text-caption text-gigpay-text-secondary leading-relaxed">
+                        Keep building your GigScore by working regularly and saving a little each day to unlock larger credit limits.
+                    </p>
+                </div>
             </div>
 
             {/* Transactions List */}

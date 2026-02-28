@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useUIStore } from '../../store/ui.store';
 import { useVoiceChat } from '../../hooks/useVoiceChat';
 import { Mic, MicOff, X, Send, Volume2, Loader2, MessageCircle } from 'lucide-react';
 import { useLanguage } from '../../context/LanguageContext';
@@ -10,10 +11,12 @@ const QUICK_REPLIES = {
 };
 
 const VoiceAssistant = () => {
-    const [isOpen, setIsOpen] = useState(false);
+    const { t, lang } = useLanguage();
+    const isOpen = useUIStore(state => state.isVoiceAssistantOpen);
+    const setIsOpen = useUIStore(state => state.setVoiceAssistantOpen);
     const [textInput, setTextInput] = useState('');
     const chatEndRef = useRef(null);
-    const { t, lang } = useLanguage();
+
 
     const {
         status, transcript, reply, error, conversation,
@@ -67,22 +70,6 @@ const VoiceAssistant = () => {
 
     return (
         <>
-            {/* Floating Mic Button — constrained to phone frame */}
-            {!isOpen && (
-                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 w-full max-w-[420px] z-50 pointer-events-none">
-                    <button
-                        onClick={handleToggle}
-                        className="absolute bottom-0 right-4 pointer-events-auto w-14 h-14 rounded-full bg-gigpay-navy text-white shadow-brutal-sm flex items-center justify-center transition-all hover:scale-105 active:scale-95"
-                        aria-label="Open voice assistant"
-                        id="voice-assistant-fab"
-                    >
-                        <div className="relative">
-                            <MessageCircle size={24} />
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-gigpay-lime rounded-full border-2 border-gigpay-navy" />
-                        </div>
-                    </button>
-                </div>
-            )}
 
             {/* Chat Overlay — constrained to phone frame */}
             {isOpen && (

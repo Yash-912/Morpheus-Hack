@@ -17,28 +17,20 @@ export const ROUTES = {
     // Main app
     HOME: '/',
     WALLET: '/wallet',
-    CASHOUT: '/cashout',
     ZONES: '/zones',
     INSIGHTS: '/insights',
-    COMMUNITY: '/community',
-    POST_JOB: '/post-job',
     LOANS: '/loans',
     SAVINGS: '/savings',
     PROFILE: '/profile',
 
     // Sub-pages (to be added)
     TRANSACTIONS: '/wallet/transactions',
-    INSURANCE: '/wallet/insurance',
     TAX: '/insights/tax',
     ALGO_INSIGHTS: '/insights/algo',
     EXPENSES: '/insights/expenses',
-    MY_JOBS: '/community/my-jobs',
     LINKED_ACCOUNTS: '/profile/linked-accounts',
     SUPPORT: '/profile/support',
 
-    // Dynamic
-    JOB_DETAIL: (id) => `/community/${id}`,
-    WORKER_PROFILE: (id) => `/community/worker/${id}`,
 };
 
 export default ROUTES;

@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 
 /**
  * QuickActions — 2×2 grid of shortcut tiles.
- * Links to Emergency Loan, Insurance, Tax, Savings.
+ * Links to Emergency Loan, Tax, Savings.
  */
 const QuickActions = () => {
     const navigate = useNavigate();

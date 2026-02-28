@@ -7,11 +7,7 @@ import Home from './pages/Home';
 import Profile from './pages/Profile';
 import Zones from './pages/Zones';
 import Wallet from './pages/Wallet';
-import Cashout from './pages/Cashout';
 import Insights from './pages/Insights';
-import Community from './pages/Community';
-import PostJob from './pages/PostJob';
-import JobDetail from './pages/JobDetail';
 import Loans from './pages/Loans';
 import Savings from './pages/Savings';
 import NotFound from './pages/NotFound';
@@ -23,10 +19,6 @@ import Transactions from './pages/Wallet/Transactions';
 // Step 8 — Insights sub-pages
 import AlgoInsights from './pages/Insights/AlgoInsights';
 import Tax from './pages/Insights/Tax';
-
-// Step 9 — Community sub-pages
-import MyJobs from './pages/Community/MyJobs';
-import WorkerProfile from './pages/Community/WorkerProfile';
 
 // Step 10 — Profile sub-pages
 import LinkedAccounts from './pages/Profile/LinkedAccounts';
@@ -87,15 +79,8 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/wallet" element={<Wallet />} />
                     <Route path="/wallet/transactions" element={<Transactions />} />
-                    <Route path="/cashout" element={<Cashout />} />
                     <Route path="/insights" element={<Insights />} />
-                    <Route path="/insights/algo" element={<AlgoInsights />} />
                     <Route path="/insights/tax" element={<Tax />} />
-                    <Route path="/community" element={<Community />} />
-                    <Route path="/community/my-jobs" element={<MyJobs />} />
-                    <Route path="/community/worker/:workerId" element={<WorkerProfile />} />
-                    <Route path="/community/:id" element={<JobDetail />} />
-                    <Route path="/post-job" element={<PostJob />} />
                     <Route path="/loans" element={<Loans />} />
                     <Route path="/savings" element={<Savings />} />
                     <Route path="/profile" element={<Profile />} />

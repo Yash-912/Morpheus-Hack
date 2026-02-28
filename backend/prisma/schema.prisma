@@ -727,7 +727,7 @@ model DigitalGoldHolding {
   id                   String   @id @default(uuid())
   userId               String   @unique @map("user_id") // 1:1 holding summary per user
   totalGrams           Float    @default(0) @map("total_grams")
-  averagePurchasePrice Float    @default(0) @map("average_purchase_price")
+  averagePurchasePrice BigInt   @default(0) @map("average_purchase_price")
 
   user                 User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -738,9 +738,9 @@ model SavingsGoal {
   id                   String   @id @default(uuid())
   userId               String   @map("user_id")
   title                String
-  targetAmount         Float    @map("target_amount")
-  currentAmount        Float    @default(0) @map("current_amount")
-  dailyDeductionLimit  Float    @map("daily_deduction_limit")
+  targetAmount         BigInt   @map("target_amount")
+  currentAmount        BigInt   @default(0) @map("current_amount")
+  dailyDeductionLimit  BigInt   @map("daily_deduction_limit")
   isCompleted          Boolean  @default(false) @map("is_completed")
 
   createdAt            DateTime @default(now()) @map("created_at")
@@ -755,8 +755,8 @@ model CreditLine {
   id                 String           @id @default(uuid())
   userId             String           @map("user_id")
   type               CreditLineType
-  principalAmount    Float            @map("principal_amount") // INR
-  outstandingAmount  Float            @map("outstanding_amount") // INR (Principal + convenience fee)
+  principalAmount    BigInt           @map("principal_amount") // INR in paise
+  outstandingAmount  BigInt           @map("outstanding_amount") // INR in paise (Principal + convenience fee)
   dailyRepaymentRate Float            @map("daily_repayment_rate") // Percentage
   reason             String?          // Track reason for emergency fund
   status             CreditLineStatus @default(ACTIVE)

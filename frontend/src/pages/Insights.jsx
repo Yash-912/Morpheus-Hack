@@ -83,11 +83,9 @@ const Insights = () => {
             setHasData(true);
         } catch (err) {
             setUploadStatus('error');
-            setUploadMsg(
-                err.response?.data?.error?.message ||
-                err.response?.data?.error ||
-                'Upload failed — please check your CSV format'
-            );
+            const errorData = err.response?.data?.error;
+            const msg = typeof errorData === 'string' ? errorData : errorData?.message || 'Upload failed — please check your CSV format';
+            setUploadMsg(msg);
         } finally {
             setUploading(false);
             // Reset the file input so same file can be re-selected
@@ -105,10 +103,9 @@ const Insights = () => {
             const res = await api.post('/forecast/predict');
             setForecast(res.data.data);
         } catch (err) {
-            setForecastError(
-                err.response?.data?.error ||
-                'Prediction failed — make sure the ML service is running'
-            );
+            const errorData = err.response?.data?.error;
+            const msg = typeof errorData === 'string' ? errorData : errorData?.message || 'Prediction failed — make sure the ML service is running';
+            setForecastError(msg);
         } finally {
             setPredicting(false);
         }

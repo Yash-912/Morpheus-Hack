@@ -147,7 +147,9 @@ export default function ExpenseEarningsChart() {
             setToast({ type: 'success', msg: `${count} days of earnings data loaded` });
             fetchData();
         } catch (err) {
-            setToast({ type: 'error', msg: err.response?.data?.error || 'Failed to seed earnings data' });
+            const errorData = err.response?.data?.error;
+            const errMsg = typeof errorData === 'string' ? errorData : errorData?.message || 'Failed to seed earnings data';
+            setToast({ type: 'error', msg: errMsg });
         } finally {
             setSeeding(false);
             setTimeout(() => setToast(null), 5000);
@@ -164,7 +166,9 @@ export default function ExpenseEarningsChart() {
             setToast({ type: 'success', msg: `${created} SMS expenses imported successfully` });
             fetchData();
         } catch (err) {
-            setToast({ type: 'error', msg: err.response?.data?.error?.message || 'Import failed, please try again' });
+            const errorData = err.response?.data?.error;
+            const errMsg = typeof errorData === 'string' ? errorData : errorData?.message || 'Import failed, please try again';
+            setToast({ type: 'error', msg: errMsg });
         } finally {
             setSimulating(false);
             setTimeout(() => setToast(null), 5000);

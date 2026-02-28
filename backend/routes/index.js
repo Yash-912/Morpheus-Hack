@@ -17,7 +17,6 @@ router.use('/loans', require('./loans.routes'));
 
 router.use('/expenses', require('./expenses.routes'));
 router.use('/tax', require('./tax.routes'));
-router.use('/community', require('./community.routes'));
 router.use('/savings', require('./savings.routes'));
 router.use('/insights', require('./insights.routes'));
 router.use('/notifications', require('./notifications.routes'));

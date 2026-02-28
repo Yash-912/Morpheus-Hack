@@ -37,7 +37,6 @@ const Transactions = () => {
         { id: '2', type: 'payout', status: 'processing', amount: 150000, description: 'Same day transfer', createdAt: new Date(Date.now() - 86400000).toISOString() },
         { id: '3', type: 'loan', status: 'completed', amount: -250000, description: 'Loan repayment', createdAt: new Date(Date.now() - 172800000).toISOString() },
         { id: '4', type: 'savings', status: 'completed', amount: -5000, description: 'Round-up savings', createdAt: new Date(Date.now() - 259200000).toISOString() },
-        { id: '5', type: 'insurance', status: 'completed', amount: -100, description: 'Daily accident premium', createdAt: new Date(Date.now() - 345600000).toISOString() },
         { id: '6', type: 'payout', status: 'failed', amount: 50000, description: 'Instant cashout', createdAt: new Date(Date.now() - 432000000).toISOString() },
     ]);
 

@@ -12,10 +12,6 @@ const translations = {
 
         // Home
         quickActions: 'Quick Actions',
-        liveOpportunities: 'Live Opportunities',
-        seeAll: 'See All',
-        loadingGigs: 'Loading nearby gigs...',
-        noGigsFound: 'No local gigs found right now.',
         cashout: 'Cashout',
         withdrawAmount: 'Withdraw',
 
@@ -26,7 +22,6 @@ const translations = {
         withdrawNow: 'Withdraw Now',
         recentTransactions: 'Recent Transactions',
         viewAll: 'View All',
-        insurance: 'Insurance',
         noTransactions: 'No transactions yet.',
 
         // Cashout
@@ -141,10 +136,6 @@ const translations = {
 
         // Home
         quickActions: 'त्वरित कार्य',
-        liveOpportunities: 'नए अवसर',
-        seeAll: 'सभी देखें',
-        loadingGigs: 'पास की गिग्स लोड हो रहीं हैं...',
-        noGigsFound: 'अभी कोई गिग नहीं मिली।',
         cashout: 'निकासी',
         withdrawAmount: 'निकालें',
 
@@ -155,7 +146,6 @@ const translations = {
         withdrawNow: 'अभी निकालें',
         recentTransactions: 'हाल के लेनदेन',
         viewAll: 'सभी देखें',
-        insurance: 'बीमा',
         noTransactions: 'अभी कोई लेनदेन नहीं।',
 
         // Cashout
@@ -270,10 +260,6 @@ const translations = {
 
         // Home
         quickActions: 'जलद कृती',
-        liveOpportunities: 'नवीन संधी',
-        seeAll: 'सर्व पहा',
-        loadingGigs: 'जवळच्या गिग्स लोड होत आहेत...',
-        noGigsFound: 'सध्या कोणतीही गिग उपलब्ध नाही.',
         cashout: 'पैसे काढा',
         withdrawAmount: 'काढा',
 
@@ -284,7 +270,6 @@ const translations = {
         withdrawNow: 'आत्ता काढा',
         recentTransactions: 'अलीकडील व्यवहार',
         viewAll: 'सर्व पहा',
-        insurance: 'विमा',
         noTransactions: 'अजून व्यवहार नाहीत.',
 
         // Cashout

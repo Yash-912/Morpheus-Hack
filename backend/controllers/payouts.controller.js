@@ -108,7 +108,18 @@ const payoutsController = {
    */
   async initiate(req, res, next) {
     try {
-      const requestedAmount = parseInt(req.body.amount, 10);
+      const amountRaw = req.body.amount;
+
+      // Strict Phase 2 Check: Prevent "Outrageous Decimal" Bug.
+      // Must be an integer representing exact paise. No decimals allowed.
+      if (typeof amountRaw === 'number' && !Number.isInteger(amountRaw)) {
+        return res.status(400).json({
+          success: false,
+          error: { code: 'PAY_002', message: 'Amount payload must be strictly sent in integer paise (multiplied by 100), not decimals.' }
+        });
+      }
+
+      const requestedAmount = parseInt(amountRaw, 10);
       const type = req.body.type || 'standard';
       const userId = req.user.id;
 
