@@ -16,6 +16,9 @@ router.use(authMiddleware);
 // GET /api/payouts/balance
 router.get('/balance', payoutsController.getBalance);
 
+// GET /api/payouts/cashout-preview (Rule-based withdrawal breakdown)
+router.get('/cashout-preview', payoutsController.cashoutPreview);
+
 // GET /api/payouts/fee-preview
 router.get(
   '/fee-preview',

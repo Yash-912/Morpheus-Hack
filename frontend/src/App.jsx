@@ -10,6 +10,7 @@ import Wallet from './pages/Wallet';
 import Insights from './pages/Insights';
 import Loans from './pages/Loans';
 import Savings from './pages/Savings';
+import Cashout from './pages/Cashout';
 import NotFound from './pages/NotFound';
 import { ProtectedRoute } from './components/shared/ProtectedRoute';
 
@@ -79,6 +80,7 @@ function App() {
                     <Route path="/" element={<Home />} />
                     <Route path="/wallet" element={<Wallet />} />
                     <Route path="/wallet/transactions" element={<Transactions />} />
+                    <Route path="/cashout" element={<Cashout />} />
                     <Route path="/insights" element={<Insights />} />
                     <Route path="/insights/tax" element={<Tax />} />
                     <Route path="/loans" element={<Loans />} />

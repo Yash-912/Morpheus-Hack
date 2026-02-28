@@ -315,6 +315,20 @@ const payoutsController = {
       next(error);
     }
   },
+
+  /**
+   * GET /api/payouts/cashout-preview
+   * Rule-based withdrawal breakdown — no user input needed.
+   */
+  async cashoutPreview(req, res, next) {
+    try {
+      const CashoutRulesEngine = require('../services/cashout.rules');
+      const breakdown = await CashoutRulesEngine.calculateBreakdown(req.user.id);
+      res.json({ success: true, data: breakdown });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 module.exports = payoutsController;
