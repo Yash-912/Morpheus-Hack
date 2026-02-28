@@ -22,7 +22,7 @@ const VoiceAssistant = () => {
         status, transcript, reply, error, conversation,
 
         startListening, stopListening, sendText, stopSpeaking, reset,
-    } = useVoiceChat();
+    } = useVoiceChat(lang);
 
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });

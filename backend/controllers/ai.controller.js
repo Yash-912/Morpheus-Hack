@@ -14,18 +14,16 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY;
 /**
  * Simple language detection from text (for TTS language_code)
  */
-function detectLanguage(text) {
-    // Check for Devanagari script (Hindi/Marathi)
-    const devanagariCount = (text.match(/[\u0900-\u097F]/g) || []).length;
-    const totalChars = text.replace(/\s/g, '').length;
-    if (totalChars > 0 && devanagariCount / totalChars > 0.3) return 'hi-IN';
-    return 'en-IN';
+function mapLanguageCode(pref) {
+    if (pref === 'mr') return 'mr-IN';
+    if (pref === 'hi') return 'hi-IN';
+    return 'en-IN'; // Default to English for generic
 }
 
 /**
  * Build a system prompt with live user data
  */
-async function buildSystemPrompt(userId) {
+async function buildSystemPrompt(userId, languagePref = 'en') {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     const walletRupees = Number(user?.walletBalance || 0) / 100;
 
@@ -54,10 +52,13 @@ async function buildSystemPrompt(userId) {
     });
     const platformList = platforms.map((p) => p.platform).join(', ') || 'None linked';
 
+    const langNames = { en: 'English', hi: 'Hindi', mr: 'Marathi' };
+    const exactLang = langNames[languagePref] || 'English';
+
     return `You are GigPay Assistant — a friendly, helpful financial advisor for Indian gig workers.
 
 IMPORTANT RULES:
-- Reply in the SAME language the user speaks. If they speak Marathi, reply in Marathi. If Hindi, reply in Hindi. If English, reply in English. If Hinglish mix, reply in Hinglish.
+- Reply STRICTLY in ${exactLang}. Do not mix languages unless using common loan words.
 - Keep replies SHORT — 2-3 sentences max. Gig workers are busy.
 - Use simple, everyday language. No jargon.
 - Always mention exact amounts in ₹ rupees.
@@ -134,11 +135,15 @@ const aiController = {
                 fieldname: req.file.fieldname,
             });
 
+            // Get language pref
+            const langPref = req.body.languagePref || 'en';
+            const targetLangCode = mapLanguageCode(langPref);
+
             // Step 1: Sarvam STT — audio → text
             let transcript = '';
-            let languageCode = 'hi-IN';
+            let languageCode = targetLangCode;
             try {
-                const sttResult = await SarvamService.speechToText(req.file.buffer);
+                const sttResult = await SarvamService.speechToText(req.file.buffer, targetLangCode);
                 transcript = sttResult.transcript;
                 languageCode = sttResult.languageCode;
             } catch (sttError) {
@@ -161,13 +166,13 @@ const aiController = {
             }
 
             // Step 2: Build system prompt with live user data
-            const systemPrompt = await buildSystemPrompt(req.user.id);
+            const systemPrompt = await buildSystemPrompt(req.user.id, langPref);
 
             // Step 3: OpenRouter LLM — get response
             const reply = await callLLM(systemPrompt, transcript);
 
             // Step 4: Sarvam TTS — text → audio (non-blocking, won't fail)
-            const ttsResult = await SarvamService.textToSpeech(reply, languageCode);
+            const ttsResult = await SarvamService.textToSpeech(reply, targetLangCode);
             const audioBase64 = ttsResult.audioBase64 || '';
 
             res.json({
@@ -191,7 +196,7 @@ const aiController = {
      */
     async textChat(req, res, next) {
         try {
-            const { message } = req.body;
+            const { message, languagePref = 'en' } = req.body;
             if (!message || message.trim() === '') {
                 return res.status(400).json({
                     success: false,
@@ -199,19 +204,19 @@ const aiController = {
                 });
             }
 
-            const systemPrompt = await buildSystemPrompt(req.user.id);
+            const targetLangCode = mapLanguageCode(languagePref);
+            const systemPrompt = await buildSystemPrompt(req.user.id, languagePref);
             const reply = await callLLM(systemPrompt, message);
 
-            // Detect language from reply and generate TTS
-            const langCode = detectLanguage(reply);
-            const ttsResult = await SarvamService.textToSpeech(reply, langCode);
+            // Generate TTS strictly in the requested language
+            const ttsResult = await SarvamService.textToSpeech(reply, targetLangCode);
 
             res.json({
                 success: true,
                 data: {
                     reply,
                     audioBase64: ttsResult.audioBase64 || '',
-                    languageCode: langCode,
+                    languageCode: targetLangCode,
                 },
             });
         } catch (error) {
@@ -250,7 +255,7 @@ RULES:
             const replyText = await callLLM(systemPrompt, userMessage);
 
             // Generate TTS so the user can immediately play the explanation
-            const langCode = detectLanguage(replyText);
+            const langCode = mapLanguageCode(languagePref);
             const ttsResult = await SarvamService.textToSpeech(replyText, langCode);
 
             res.json({

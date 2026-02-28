@@ -5,7 +5,7 @@ import { sendVoiceMessage, sendTextMessage } from '../services/voice.api';
  * Custom hook for voice chat — manages recording, API calls, and audio playback
  * States: idle | listening | processing | speaking | error
  */
-export const useVoiceChat = () => {
+export const useVoiceChat = (langPref = 'en') => {
     const [status, setStatus] = useState('idle'); // idle | listening | processing | speaking | error
     const [transcript, setTranscript] = useState('');
     const [reply, setReply] = useState('');
@@ -69,7 +69,7 @@ export const useVoiceChat = () => {
             setError(`Mic Error: ${err.message || 'Access Denied'}`);
             setStatus('error');
         }
-    }, []);
+    }, [langPref]);
 
     /**
      * Stop recording and trigger processing
@@ -88,7 +88,7 @@ export const useVoiceChat = () => {
         setStatus('processing');
 
         try {
-            const result = await sendVoiceMessage(audioBlob);
+            const result = await sendVoiceMessage(audioBlob, langPref);
             const { transcript: txt, reply: rep, audioBase64, languageCode } = result;
 
             setTranscript(txt);
@@ -126,7 +126,7 @@ export const useVoiceChat = () => {
         setError(null);
 
         try {
-            const result = await sendTextMessage(message);
+            const result = await sendTextMessage(message, langPref);
             setReply(result.reply);
 
             setConversation((prev) => [
