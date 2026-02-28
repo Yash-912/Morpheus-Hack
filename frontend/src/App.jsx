@@ -82,6 +82,7 @@ function App() {
                     <Route path="/wallet/transactions" element={<Transactions />} />
                     <Route path="/cashout" element={<Cashout />} />
                     <Route path="/insights" element={<Insights />} />
+                    <Route path="/insights/algo" element={<AlgoInsights />} />
                     <Route path="/insights/tax" element={<Tax />} />
                     <Route path="/loans" element={<Loans />} />
                     <Route path="/savings" element={<Savings />} />

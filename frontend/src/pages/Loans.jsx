@@ -32,7 +32,7 @@ const Loans = () => {
     };
 
     const gigScore = user?.gigScore || 0;
-    const isEligible = eligibility?.isEligible;
+    const isEligible = eligibility?.eligible || eligibility?.isEligible;
     const maxAmount = (eligibility?.maxAmount || 0) / 100;
 
     return (

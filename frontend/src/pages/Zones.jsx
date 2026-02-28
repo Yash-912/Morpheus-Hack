@@ -235,7 +235,7 @@ const Zones = () => {
             )}
 
             {/* Google Map */}
-            <div className="flex-1 w-full bg-[#E2E8F0] relative overflow-hidden">
+            <div className="flex-1 w-full bg-[#E2E8F0] relative" style={{ touchAction: 'auto' }}>
                 {import.meta.env.VITE_GOOGLE_MAPS_API_KEY ? (
                     <APIProvider apiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY}>
                         <Map
