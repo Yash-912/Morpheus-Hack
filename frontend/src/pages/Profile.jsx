@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
-import { ShieldCheck, LogOut, ChevronRight, ChevronDown, User, Settings, HelpCircle, Star, MapPin, Link2, MessageSquare, Loader2, Clock, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
+import { ShieldCheck, LogOut, ChevronRight, ChevronDown, User, Settings, HelpCircle, Star, MapPin, Link2, MessageSquare, Loader2, Clock, CheckCircle, AlertTriangle, XCircle } from 'lucide-react';
 import { useGPSContext } from '../context/GPSContext';
 import { readSms } from '../plugins/sms-plugin';
 import api from '../services/api.service';
@@ -127,7 +127,7 @@ const Profile = () => {
 
     const StatusBadge = ({ status }) => {
         const config = {
-            success: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle2 },
+            success: { bg: 'bg-emerald-100', text: 'text-emerald-700', icon: CheckCircle },
             partial: { bg: 'bg-amber-100', text: 'text-amber-700', icon: AlertTriangle },
             failed: { bg: 'bg-red-100', text: 'text-red-700', icon: XCircle },
             pending: { bg: 'bg-gray-100', text: 'text-gray-600', icon: Clock },

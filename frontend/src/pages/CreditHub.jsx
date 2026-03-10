@@ -4,7 +4,7 @@ import { useCredit } from '../hooks/useCredit';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { ArrowLeft, Zap, Info, ShieldCheck, Clock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Zap, Info, ShieldCheck, Clock, CheckCircle } from 'lucide-react';
 
 const AMOUNT_OPTIONS = [500, 1000, 1500];
 const CONVENIENCE_FEES = { 500: 15, 1000: 30, 1500: 45 };
@@ -87,7 +87,7 @@ const CreditHub = () => {
                     {/* Repayment History */}
                     {status?.repaymentHistory?.totalRepaid > 0 && (
                         <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-2 rounded-lg">
-                            <CheckCircle2 size={14} />
+                            <CheckCircle size={14} />
                             <span>{status.repaymentHistory.totalRepaid} previous fund(s) repaid successfully</span>
                         </div>
                     )}
@@ -97,7 +97,7 @@ const CreditHub = () => {
                 <section className="flex flex-col gap-4 animate-slide-up">
                     <div>
                         <Badge variant="success" className="mb-2">
-                            <CheckCircle2 size={12} className="mr-1 inline" /> Pre-Approved
+                            <CheckCircle size={12} className="mr-1 inline" /> Pre-Approved
                         </Badge>
                         <h2 className="text-heading-md text-gigpay-navy">Instant Cash Advance</h2>
                         <p className="text-body-md text-gigpay-text-secondary mt-1">

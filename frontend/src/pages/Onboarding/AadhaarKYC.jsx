@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { Card } from '../../components/ui/Card';
 import { Input } from '../../components/ui/Input';
-import { ArrowLeft, ShieldCheck, UploadCloud, CheckCircle2, FileArchive } from 'lucide-react';
+import { ArrowLeft, ShieldCheck, UploadCloud, CheckCircle, FileArchive } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { uploadAadhaarXmlApi } from '../../services/auth.api';
 import { useAuth } from '../../hooks/useAuth';
@@ -205,7 +205,7 @@ const AadhaarKYC = () => {
                 {screen === 'confirmed' && verifiedData && (
                     <div className="flex flex-col items-center text-center pt-8">
                         <div className="w-20 h-20 bg-[#16A34A] rounded-full flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(22,163,74,0.3)]">
-                            <CheckCircle2 size={40} className="text-white" />
+                            <CheckCircle size={40} className="text-white" />
                         </div>
 
                         <h1 className="font-syne font-bold text-display-md text-gigpay-navy mb-8">

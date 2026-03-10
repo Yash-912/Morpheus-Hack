@@ -6,7 +6,7 @@ import { useAuth } from '../hooks/useAuth';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Badge } from '../components/ui/Badge';
-import { ArrowLeft, FileText, Shield, CheckCircle2, Loader2, AlertCircle, IndianRupee, Building2 } from 'lucide-react';
+import { ArrowLeft, FileText, Shield, CheckCircle, Loader2, AlertCircle, IndianRupee, Building2 } from 'lucide-react';
 
 // Flow steps
 const STEP = { ENTER_PAN: 0, REVIEW: 1, CONSENT: 2, FILING: 3, SUCCESS: 4 };
@@ -260,7 +260,7 @@ const TaxDashboard = () => {
                 <section className="flex flex-col gap-4 animate-slide-up">
                     <div className="text-center py-4">
                         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
-                            <CheckCircle2 size={32} className="text-green-600" />
+                            <CheckCircle size={32} className="text-green-600" />
                         </div>
                         <h2 className="text-heading-lg font-bold text-green-600 mb-1">ITR Filed Successfully!</h2>
                         <p className="text-sm text-gigpay-text-secondary">Your return has been e-verified and submitted</p>
@@ -323,7 +323,7 @@ const StepIndicator = ({ label, delay }) => {
         <div className="flex items-center gap-3">
             <div className={`w-5 h-5 rounded-full flex items-center justify-center transition-all duration-300 ${done ? 'bg-green-500' : 'bg-slate-200'}`}>
                 {done ? (
-                    <CheckCircle2 size={14} className="text-white" />
+                    <CheckCircle size={14} className="text-white" />
                 ) : (
                     <Loader2 size={12} className="text-slate-400 animate-spin" />
                 )}

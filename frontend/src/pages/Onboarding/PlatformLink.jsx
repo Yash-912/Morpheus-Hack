@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../../components/ui/Button';
 import { ActionCard } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
-import { ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 
 const PlatformLink = () => {
     const navigate = useNavigate();
@@ -36,7 +36,7 @@ const PlatformLink = () => {
                                 <span className="text-caption text-gigpay-text-secondary">Synced 5 mins ago</span>
                             </div>
                         </div>
-                        <CheckCircle2 size={24} className="text-[#16A34A]" />
+                        <CheckCircle size={24} className="text-[#16A34A]" />
                     </ActionCard>
 
                     {/* Unlinked Platform */}
